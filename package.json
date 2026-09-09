@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@hookform/resolvers": "5.2.2",
-    "@khinemyaezin/seller-api": "^1.0.1-canary-df75dfd",
-    "@khinemyaezin/seller-contracts": "^1.0.1-canary-df75dfd",
-    "@khinemyaezin/seller-ui": "^1.0.1-canary-df75dfd",
+    "@khinemyaezin/seller-api": "^1.0.1-canary-3fab78d",
+    "@khinemyaezin/seller-contracts": "^1.0.1-canary-3fab78d",
+    "@khinemyaezin/seller-ui": "^1.0.1-canary-3fab78d",
     "@tailwindcss/vite": "^4.3.2",
     "@tanstack/react-query": "5.99.2",
     "lodash": "4.18.1",

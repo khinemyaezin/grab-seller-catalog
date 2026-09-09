@@ -5,6 +5,7 @@ import { Route, Routes } from "react-router";
 import ProductListPage from "@/features/products/pages/product-list-page";
 import ProductCreatePage from "@/features/products/pages/product-create-page";
 import ProductEditPage from "@/features/products/pages/product-edit-page";
+import ProductVariantEditPage from "@/features/products/pages/product-variant-edit-page";
 import "../styles.css";
 
 export type AppRoutesProps = {
@@ -27,6 +28,7 @@ export default function AppRoutes({
               <Route index element={<ProductListPage />} />
               <Route path="new" element={<ProductCreatePage/>}/>
               <Route path=":productId" element={<ProductEditPage />} />
+              <Route path=":productId/variants/:variantId" element={<ProductVariantEditPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </EntryLinkProvider>

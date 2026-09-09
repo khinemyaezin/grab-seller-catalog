@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router";
 import { Input } from "@khinemyaezin/seller-ui/components/input";
 import { Button } from "@khinemyaezin/seller-ui/components/button";
 import {
@@ -111,7 +112,16 @@ export function VariantTable({ onAllVariantsDeleted, columns }: VariantTableProp
                   />
                 </TableCell>
                 <TableCell>
-                  {variant.name}
+                  {variant.id ? (
+                    <Link
+                      to={`variants/${variant.id}`}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      {variant.name}
+                    </Link>
+                  ) : (
+                    variant.name
+                  )}
                 </TableCell>
                 <TableCell className="px-4 py-2">
                   <Controller
