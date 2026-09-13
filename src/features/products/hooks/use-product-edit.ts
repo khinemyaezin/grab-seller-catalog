@@ -1,6 +1,5 @@
-import { useEffect } from "react";
-import { useFormContext } from "react-hook-form";
-import { ProductFormValue, GetFullProductResponse, ProductLifecycleEvent } from "../types";
+import { useMemo } from "react";
+import { ProductFormValue, GetFullProductResponse } from "../types";
 import { useProductGet } from "./use-products";
 import { useCatalogLink } from "./use-root";
 
@@ -24,7 +23,7 @@ function getVariantName(v: { variations: { optionId: string }[] }, nameMap: Reco
 
 }
 
-function transformProductToFormValue(apiData: GetFullProductResponse): ProductFormValue {
+export function transformProductToFormValue(apiData: GetFullProductResponse): ProductFormValue {
     const nameMap = Object.fromEntries(apiData.variantTypes.flatMap((t) =>
         t.options.map((o) => [o.optionId, o.optionName])));
 
@@ -34,10 +33,7 @@ function transformProductToFormValue(apiData: GetFullProductResponse): ProductFo
     return {
         product: {
             name: apiData.name,
-            category: apiData?.category ?? {
-                id: apiData.category.id,
-                name: apiData.category.name
-            },
+            category: apiData.category ?? null,
             variants: apiData.variants.map((v) => ({
                 id: v.id,
                 name: getVariantName(v, nameMap),
@@ -74,20 +70,16 @@ function transformProductToFormValue(apiData: GetFullProductResponse): ProductFo
 
 export type UseProductEditProps = {
     productId: string;
-    onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
 };
 
 export function useProductEdit({ productId }: UseProductEditProps) {
-    const { reset } = useFormContext<ProductFormValue>();
     const getProductLink = useCatalogLink("getProduct");
-    const { data, isLoading, refetch } = useProductGet(getProductLink, productId);
+    const { data, isLoading, isError } = useProductGet(getProductLink, productId);
 
-    useEffect(() => {
-        if (data) {
-            const formValue = transformProductToFormValue(data);
-            reset(formValue);
-        }
-    }, [data, reset]);
+    const seed = useMemo(
+        () => (data ? transformProductToFormValue(data) : null),
+        [data],
+    );
 
-    return { isLoading, refetch, status: data?.status, actions: data?._links };
+    return { isLoading, isError, seed, status: data?.status, actions: data?._links };
 }

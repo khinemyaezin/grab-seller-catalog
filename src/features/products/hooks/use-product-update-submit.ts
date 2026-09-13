@@ -33,7 +33,6 @@ const PRODUCT_SLICES = [
 export type UseProductUpdateSubmitOptions = {
   productId: string;
   onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
-  refetch?: () => void;
 };
 
 export type UseProductUpdateSubmitResult = {
@@ -43,7 +42,6 @@ export type UseProductUpdateSubmitResult = {
 export function useProductUpdateSubmit({
   productId,
   onLifecycleEvent,
-  refetch,
 }: UseProductUpdateSubmitOptions): UseProductUpdateSubmitResult {
   const queryClient = useQueryClient();
   const { getValues } = useFormContext<ProductFormValue>();
@@ -89,7 +87,6 @@ export function useProductUpdateSubmit({
       void invalidateProductQueries(queryClient, productId);
       onLifecycleEvent?.({ type: "updated" });
       resetMutation();
-      refetch?.();
     } catch (error) {
       resetMutation();
       if (error instanceof WorkflowTimeoutError) {
@@ -107,7 +104,6 @@ export function useProductUpdateSubmit({
     productId,
     productUpdateLink,
     queryClient,
-    refetch,
     resetMutation,
     validate,
   ]);
