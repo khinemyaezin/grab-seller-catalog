@@ -17,5 +17,6 @@ export async function fetchCatalogRoot(link: HateoasLink): Promise<CatalogRoot> 
     generateVariationMatrix: resolveLink(response._links, "generate-variation-matrix"),
     createSellableProduct: resolveLink(response._links, "create-sellable-product"),
     updateSellableProduct: resolveLink(response._links, "update-sellable-product"),
+    updateProductVariant: resolveLink(response._links, "update-product-variant"),
   };
 }

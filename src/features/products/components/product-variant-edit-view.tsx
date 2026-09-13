@@ -27,7 +27,7 @@ export default function ProductVariantEditView({
 }: ProductVariantEditViewProps) {
   const navigate = useNavigate();
   const getProductLink = useCatalogLink("getProduct");
-  const { data: product, isLoading } = useProductGet(getProductLink, productId);
+  const { data: product, isLoading, isError } = useProductGet(getProductLink, productId);
 
   const nameMap = useMemo(() => {
     return Object.fromEntries(
@@ -39,6 +39,16 @@ export default function ProductVariantEditView({
 
   const variants = product?.variants ?? [];
   const currentVariantId = variantId || variants[0]?.id || "";
+
+  if (isError && !product) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-muted-foreground">
+          Failed to load product variants.
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading || !product) {
     return (
@@ -86,7 +96,7 @@ export default function ProductVariantEditView({
           ) : (
             <RadioGroup
               value={currentVariantId}
-              onValueChange={(id) => navigate(`/products/${productId}/variants/${id}`)}
+              onValueChange={(id) => navigate(`../${id}`, { relative: "path" })}
             >
               <ItemGroup className="gap-0 divide-y divide-border">
                 {variants.map((v) => {

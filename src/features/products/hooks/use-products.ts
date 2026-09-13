@@ -12,6 +12,8 @@ import type {
   UpdateProductResponse,
   UpdateSellableProductRequest,
   UpdateSellableProductResponse,
+  UpdateProductVariantRequest,
+  UpdateProductVariantResponse,
   ProductModerationResponse,
   DeleteProductResponse,
   ProductFilterFormValue,
@@ -63,6 +65,16 @@ export function useUpdateSellableProductMutation() {
     { link: HateoasLink; request: UpdateSellableProductRequest }
   >({
     mutationFn: ({ link, request }) => catalogService.updateSellableProduct(link, request),
+  });
+}
+
+export function useUpdateProductVariantMutation() {
+  return useMutation<
+    UpdateProductVariantResponse,
+    Error,
+    { link: HateoasLink; request: UpdateProductVariantRequest }
+  >({
+    mutationFn: ({ link, request }) => catalogService.updateProductVariant(link, request),
   });
 }
 

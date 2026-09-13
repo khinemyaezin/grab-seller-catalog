@@ -20,6 +20,7 @@ describe("catalog discovery", () => {
         "generate-variation-matrix": { href: "/catalog/variation-matrix" },
         "create-sellable-product": { href: "/api/v1/workflows/create-sellable-product" },
         "update-sellable-product": { href: "/api/v1/workflows/update-sellable-product" },
+        "update-product-variant": { href: "/api/v1/workflows/update-product-variant" },
       },
     }, { headers: { "content-type": "application/hal+json" } })));
 
@@ -38,5 +39,6 @@ describe("catalog discovery", () => {
     expect(root.generateVariationMatrix?.href).toBe("/catalog/variation-matrix");
     expect(root.createSellableProduct?.href).toBe("/api/v1/workflows/create-sellable-product");
     expect(root.updateSellableProduct?.href).toBe("/api/v1/workflows/update-sellable-product");
+    expect(root.updateProductVariant?.href).toBe("/api/v1/workflows/update-product-variant");
   });
 });
