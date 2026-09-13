@@ -27,6 +27,8 @@ export type {
   UpdateSellableProductRequest,
   UpdateSellableProductInventoryLine,
   UpdateSellableProductPricingLine,
+  UpdateProductVariantPrice,
+  UpdateProductVariantRequest,
   UPDATE_INTENT,
   ProductSearchRequest,
   GetVariantRequest,
@@ -55,6 +57,7 @@ export type {
   WorkflowsRoot,
   CreateSellableProductResponse,
   UpdateSellableProductResponse,
+  UpdateProductVariantResponse,
 } from "./catalog.response";
 
 // Form Values

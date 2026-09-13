@@ -13,6 +13,7 @@ export interface CatalogRoot {
   generateVariationMatrix?: HateoasLink
   createSellableProduct?: HateoasLink
   updateSellableProduct?: HateoasLink
+  updateProductVariant?: HateoasLink
 }
 
 export type VariationMatrixResponseVariation = {
@@ -155,6 +156,10 @@ export interface WorkflowsRoot {
   self?: HateoasLink;
   createSellableProduct?: HateoasLink;
   getCreateSellableProduct?: HateoasLink;
+  updateSellableProduct?: HateoasLink;
+  getUpdateSellableProduct?: HateoasLink;
+  updateProductVariant?: HateoasLink;
+  getUpdateProductVariant?: HateoasLink;
 }
 
 export type CreateSellableProductResponse = {
@@ -173,3 +178,23 @@ export type CreateSellableProductResponse = {
 };
 
 export type UpdateSellableProductResponse = CreateSellableProductResponse;
+
+export type UpdateProductVariantResponse = {
+  workflowId: string;
+  status: string;
+  currentStep?: string | null;
+  productId?: string | null;
+  variantId?: string | null;
+  sku?: string | null;
+  variantUpdated?: boolean;
+  pricePair?: {
+    variantId: string;
+    sku: string;
+    priceSetId: string;
+  } | null;
+  inventoryItemIds?: string[];
+  compensatedPriceSetCount?: number;
+  partiallyApplied?: boolean;
+  errorMessage?: string | null;
+  _links?: Record<string, HateoasLink>;
+};

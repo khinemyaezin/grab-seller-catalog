@@ -11,8 +11,14 @@ import ProductVariantEditView from "../components/product-variant-edit-view";
 export default function ProductVariantEditPage() {
   const { productId, variantId } = useParams<{ productId: string; variantId: string }>();
   const canEdit = !!useCatalogLink("getProduct");
-  const { title, handleEvent } = useProductEditEvents();
+  const { title, handleEvent } = useProductEditEvents({
+    updated: "Variant updated",
+    updateFailed: "Failed to update variant",
+    updateTimedOut: "Variant update is still running. Check back shortly.",
+  });
   useShellBreadcrumb(title);
+
+  const hasParams = Boolean(productId && variantId);
 
   return (
     <div className="container mx-auto max-w-5xl p-6">
@@ -28,15 +34,19 @@ export default function ProductVariantEditPage() {
           </Button>
         </ButtonGroup>
       </Header>
-      <SlotProvider>
-          {canEdit && (
-            <ProductVariantEditView
-              productId={productId!}
-              variantId={variantId!}
-              onLifecycleEvent={handleEvent}
-            />
-          )}
-      </SlotProvider>
+      {!hasParams ? (
+        <p className="text-sm text-muted-foreground">Missing product or variant.</p>
+      ) : !canEdit ? (
+        <p className="text-sm text-muted-foreground">You do not have permission to edit this variant.</p>
+      ) : (
+        <SlotProvider>
+          <ProductVariantEditView
+            productId={productId!}
+            variantId={variantId!}
+            onLifecycleEvent={handleEvent}
+          />
+        </SlotProvider>
+      )}
     </div>
   );
 }

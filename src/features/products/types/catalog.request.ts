@@ -153,6 +153,30 @@ export type UpdateSellableProductRequest = {
   idempotencyKey?: string;
 };
 
+export type UpdateProductVariantPrice = {
+  title?: string;
+  currencyCode: string;
+  amount: number;
+  minQuantity?: number | null;
+  maxQuantity?: number | null;
+  rules?: {
+    attribute: string;
+    value: string;
+    operator?: string;
+    priority?: number;
+  }[];
+};
+
+export type UpdateProductVariantRequest = {
+  productId: string;
+  variantId: string;
+  sku: string;
+  manageInventory?: boolean;
+  price?: UpdateProductVariantPrice;
+  inventoryLines?: UpdateSellableProductInventoryLine[];
+  idempotencyKey?: string;
+};
+
 export interface ProductSearchRequest {
   query?: string,
   variantStatus?: string,

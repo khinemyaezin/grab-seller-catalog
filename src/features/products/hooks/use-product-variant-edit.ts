@@ -1,10 +1,5 @@
-import { useEffect } from "react";
-import { useFormContext } from "react-hook-form";
-import type {
-  GetVariantResponse,
-  ProductLifecycleEvent,
-  ProductVariantForm,
-} from "../types";
+import { useMemo } from "react";
+import type { GetVariantResponse, ProductVariantForm } from "../types";
 import { useProductVariantGet } from "./use-products";
 import { useCatalogLink } from "./use-root";
 
@@ -44,34 +39,27 @@ export function transformVariantToFormValue(apiData: GetVariantResponse): Produc
 export type UseProductVariantEditProps = {
   productId: string;
   variantId: string;
-  onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
 };
 
 export function useProductVariantEdit({
   productId,
   variantId,
-  onLifecycleEvent,
 }: UseProductVariantEditProps) {
-  const { reset } = useFormContext<ProductVariantForm>();
   const getVariantLink = useCatalogLink("getVariant");
-  const { data, isLoading, refetch } = useProductVariantGet(getVariantLink, {
+  const { data, isLoading, isError } = useProductVariantGet(getVariantLink, {
     productId,
     variantId,
   });
 
-  useEffect(() => {
-    if (data) {
-      const formValue = transformVariantToFormValue(data);
-      reset(formValue);
-      if (formValue.name) {
-        onLifecycleEvent?.({ type: "titleResolved", title: formValue.name });
-      }
-    }
-  }, [data, reset, onLifecycleEvent]);
+  const seed = useMemo(
+    () => (data ? transformVariantToFormValue(data) : null),
+    [data],
+  );
 
   return {
     isLoading,
-    refetch,
+    isError,
+    seed,
     status: data?.status,
     actions: data?._links,
     data,

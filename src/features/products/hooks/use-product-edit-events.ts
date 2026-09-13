@@ -3,7 +3,13 @@ import { usePlatform } from "@khinemyaezin/seller-ui";
 import type { ProductLifecycleEvent } from "@/features/products/types";
 import { formatExtensionErrorsForToast } from "@/features/products/utils/error-formatter";
 
-export function useProductEditEvents() {
+export type ProductEditEventMessages = {
+  updated?: string;
+  updateFailed?: string;
+  updateTimedOut?: string;
+};
+
+export function useProductEditEvents(messages?: ProductEditEventMessages) {
   const platform = usePlatform();
   const [title, setTitle] = useState<string | undefined>();
 
@@ -26,13 +32,13 @@ export function useProductEditEvents() {
           setTitle(event.title);
           break;
         case "updated":
-          toast("success", "Product updated");
+          toast("success", messages?.updated ?? "Product updated");
           break;
         case "updateFailed":
-          toast("error", "Failed to update product");
+          toast("error", messages?.updateFailed ?? "Failed to update product");
           break;
         case "updateTimedOut":
-          toast("error", "Product update is still running. Check back shortly.");
+          toast("error", messages?.updateTimedOut ?? "Product update is still running. Check back shortly.");
           break;
         case "validationFailed": {
           const { message, description } = formatExtensionErrorsForToast(
@@ -62,7 +68,7 @@ export function useProductEditEvents() {
           break;
       }
     },
-    [toast],
+    [messages?.updateFailed, messages?.updateTimedOut, messages?.updated, toast],
   );
 
   return {

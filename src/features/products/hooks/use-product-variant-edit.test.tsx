@@ -1,16 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useForm, FormProvider } from "react-hook-form";
-import type { ReactNode } from "react";
 import {
   useProductVariantEdit,
   transformVariantToFormValue,
   getVariantName,
-  DEFAULT_PRODUCT_VARIANT_FORM_VALUE,
 } from "./use-product-variant-edit";
-import type { GetVariantResponse, ProductVariantForm } from "../types";
+import type { GetVariantResponse } from "../types";
 
-// Mock dependencies
 const mockUseCatalogLink = vi.fn();
 const mockUseProductVariantGet = vi.fn();
 
@@ -82,17 +78,7 @@ describe("transformVariantToFormValue & getVariantName", () => {
 });
 
 describe("useProductVariantEdit hook", () => {
-  function createWrapper() {
-    return function FormWrapper({ children }: { children: ReactNode }) {
-      const methods = useForm<ProductVariantForm>({
-        defaultValues: DEFAULT_PRODUCT_VARIANT_FORM_VALUE,
-      });
-      return <FormProvider {...methods}>{children}</FormProvider>;
-    };
-  }
-
-  it("fetches variant data and resets form value", async () => {
-    const mockRefetch = vi.fn();
+  it("fetches variant data and returns a form seed", async () => {
     const mockVariantLink = { href: "/products/{productId}/variants/{variantId}", templated: true };
     mockUseCatalogLink.mockReturnValue(mockVariantLink);
 
@@ -114,19 +100,14 @@ describe("useProductVariantEdit hook", () => {
     mockUseProductVariantGet.mockReturnValue({
       data: mockApiResponse,
       isLoading: false,
-      refetch: mockRefetch,
+      isError: false,
     });
 
-    const onLifecycleEvent = vi.fn();
-
-    const { result } = renderHook(
-      () =>
-        useProductVariantEdit({
-          productId: "prod-123",
-          variantId: "var-456",
-          onLifecycleEvent,
-        }),
-      { wrapper: createWrapper() }
+    const { result } = renderHook(() =>
+      useProductVariantEdit({
+        productId: "prod-123",
+        variantId: "var-456",
+      }),
     );
 
     expect(mockUseCatalogLink).toHaveBeenCalledWith("getVariant");
@@ -136,15 +117,23 @@ describe("useProductVariantEdit hook", () => {
     });
 
     await waitFor(() => {
-      expect(onLifecycleEvent).toHaveBeenCalledWith({
-        type: "titleResolved",
-        title: "Black / 42",
+      expect(result.current.seed).toEqual({
+        id: "var-456",
+        name: "Black / 42",
+        matrixKey: "blk-42",
+        sku: "SNK-BLK-42",
+        manageInventory: true,
+        variations: [
+          { typeId: "t1", optionId: "o1" },
+          { typeId: "t2", optionId: "o2" },
+        ],
       });
     });
 
     expect(result.current.status).toBe("ACTIVE");
     expect(result.current.actions).toEqual(mockApiResponse._links);
     expect(result.current.isLoading).toBe(false);
+    expect(result.current.isError).toBe(false);
     expect(result.current.data).toBe(mockApiResponse);
   });
 });
