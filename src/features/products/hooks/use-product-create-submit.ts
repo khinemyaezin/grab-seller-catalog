@@ -1,15 +1,20 @@
 import { useCallback } from "react";
-import { useFormContext, type UseFormReturn } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import type { HateoasLink } from "@khinemyaezin/seller-api";
 import { useQueryClient } from "@tanstack/react-query";
-import { useValidateAllSlots } from "@khinemyaezin/seller-ui";
+import {
+  collectSlotFieldErrors,
+  mergeContributions,
+  useValidateAllSlots,
+} from "@khinemyaezin/seller-ui";
+import { PRODUCT_CONTRIBUTION_SLICES } from "@khinemyaezin/seller-contracts";
 import {
   useCreateSellableProductMutation,
   invalidateProductsQueries,
 } from "@/features/products/hooks/use-products";
 import { buildCreateSellableProductRequest } from "@/features/products/adapters/create-sellable-product-request";
-import { useCreateExtensionSyncStore } from "@/features/products/context/extension-sync-store";
 import type {
+  ProductContributions,
   ProductFormValue,
   ProductLifecycleEvent,
 } from "@/features/products/types";
@@ -18,6 +23,11 @@ import {
   useWorkflowAwaiter,
   WorkflowTimeoutError,
 } from "@/features/products/hooks/use-workflow-awaiter";
+
+const PRODUCT_SLICES = [
+  PRODUCT_CONTRIBUTION_SLICES.PRICING_LINES,
+  PRODUCT_CONTRIBUTION_SLICES.INVENTORY_LINES,
+] as const;
 
 export type UseProductCreateSubmitOptions = {
   link: HateoasLink;
@@ -35,9 +45,8 @@ export function useProductCreateSubmit({
   onSuccess
 }: UseProductCreateSubmitOptions): UseProductCreateSubmitResult {
   const queryClient = useQueryClient();
-  const { getValues, reset } = useFormContext<ProductFormValue>();
+  const { getValues } = useFormContext<ProductFormValue>();
   const { validate } = useValidateAllSlots();
-  const { runDomainSubmit } = useCreateExtensionSyncStore();
   const mutation = useCreateSellableProductMutation();
   const { mutateAsync, reset: resetMutation } = mutation;
 
@@ -47,15 +56,14 @@ export function useProductCreateSubmit({
 
   const submit = useCallback(async () => {
     const results = await validate();
-    const { contributions, errors } = runDomainSubmit(results);
-    const hasSlotErrors = results.some((result) => !result.valid);
-    const hasFieldErrors = Object.keys(errors).length > 0;
+    const errors = collectSlotFieldErrors(results);
 
-    if (hasSlotErrors || hasFieldErrors) {
+    if (results.some((result) => !result.valid)) {
       onLifecycleEvent?.({ type: "validationFailed", errors });
       throw new Error("Validation failed");
     }
 
+    const contributions = mergeContributions(results, PRODUCT_SLICES) as ProductContributions;
     const payload = buildCreateSellableProductRequest(getValues(), contributions);
 
     try {
@@ -84,9 +92,9 @@ export function useProductCreateSubmit({
     link,
     mutateAsync,
     onLifecycleEvent,
+    onSuccess,
     queryClient,
     resetMutation,
-    runDomainSubmit,
     validate,
   ]);
 

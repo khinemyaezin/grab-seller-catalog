@@ -10,7 +10,8 @@ export const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
         category: null,
         variants: [],
         standaloneVariant: {
-            sku: ""
+            sku: "",
+            manageInventory: false,
         }
     },
     variationTypes: [],
@@ -43,13 +44,18 @@ function transformProductToFormValue(apiData: GetFullProductResponse): ProductFo
                 matrixKey: v.matrixKey,
                 sku: v.sku,
                 price: "",
+                manageInventory: v.manageInventory === true,
                 variations: v.variations.map((r) => ({
                     typeId: r.typeId,
                     optionId: r.optionId,
                 })),
             })),
-            standaloneVariant: standaloneVariant ? standaloneVariant : {
-                sku: ""
+            standaloneVariant: standaloneVariant ? {
+                ...standaloneVariant,
+                manageInventory: standaloneVariant.manageInventory === true,
+            } : {
+                sku: "",
+                manageInventory: false,
             },
         },
         variationTypes: apiData.variantTypes.map((vt) => ({

@@ -5,6 +5,7 @@ import type {
 } from "@/features/products/types";
 import { generateSlug } from "@/features/products/utils";
 import { ProductContributions } from "../types/catalog.request";
+import { tracksInventory } from "../components/manage-inventory-field";
 
 export function buildCreateProductRequest(
   values: ProductFormValue,
@@ -18,10 +19,12 @@ export function buildCreateProductRequest(
         typeId: variation.typeId,
         optionId: variation.optionId,
       })),
+      manageInventory: tracksInventory(variant.manageInventory),
     }))
     : [{
       sku: values.product.standaloneVariant.sku ?? "",
       variations: [],
+      manageInventory: tracksInventory(values.product.standaloneVariant.manageInventory),
     }];
 
   return {

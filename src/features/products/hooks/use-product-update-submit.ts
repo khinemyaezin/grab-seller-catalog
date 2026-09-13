@@ -1,17 +1,22 @@
 import { useCallback } from "react";
 import { useFormContext } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
-import { useValidateAllSlots } from "@khinemyaezin/seller-ui";
+import {
+  collectSlotFieldErrors,
+  mergeContributions,
+  useValidateAllSlots,
+} from "@khinemyaezin/seller-ui";
+import { PRODUCT_CONTRIBUTION_SLICES } from "@khinemyaezin/seller-contracts";
 import {
   useUpdateSellableProductMutation,
   invalidateProductQueries,
 } from "@/features/products/hooks/use-products";
 import { buildUpdateSellableProductRequest } from "@/features/products/adapters/update-sellable-product-request";
 import { determineUpdateIntent } from "@/features/products/adapters/update-product-request";
-import { useUpdateExtensionSyncStore } from "@/features/products/context/extension-sync-store";
 import type {
   ProductFormValue,
   ProductLifecycleEvent,
+  UpdateProductContributions,
 } from "@/features/products/types";
 import { UPDATE_SELLABLE_PRODUCT_WORKFLOW } from "@/features/products/constants/create-sellable-product-workflow";
 import {
@@ -19,6 +24,11 @@ import {
   WorkflowTimeoutError,
 } from "@/features/products/hooks/use-workflow-awaiter";
 import { useCatalogLink } from "./use-root";
+
+const PRODUCT_SLICES = [
+  PRODUCT_CONTRIBUTION_SLICES.PRICING_LINES,
+  PRODUCT_CONTRIBUTION_SLICES.INVENTORY_LINES,
+] as const;
 
 export type UseProductUpdateSubmitOptions = {
   productId: string;
@@ -40,7 +50,6 @@ export function useProductUpdateSubmit({
   const productUpdateLink = useCatalogLink("updateSellableProduct");
 
   const { validate } = useValidateAllSlots();
-  const { runDomainSubmit } = useUpdateExtensionSyncStore();
   const mutation = useUpdateSellableProductMutation();
   const { mutateAsync, reset: resetMutation } = mutation;
 
@@ -54,11 +63,9 @@ export function useProductUpdateSubmit({
     }
 
     const results = await validate();
-    const { contributions, errors } = runDomainSubmit(results);
-    const hasSlotErrors = results.some((result) => !result.valid);
-    const hasFieldErrors = Object.keys(errors).length > 0;
+    const errors = collectSlotFieldErrors(results);
 
-    if (hasSlotErrors || hasFieldErrors) {
+    if (results.some((result) => !result.valid)) {
       onLifecycleEvent?.({ type: "validationFailed", errors });
       throw new Error("Validation failed");
     }
@@ -68,10 +75,8 @@ export function useProductUpdateSubmit({
       hasVariationTypes: values.variationTypes.length > 0,
     });
 
-    const payload = buildUpdateSellableProductRequest(productId, values, intent, {
-      pricingLines: contributions.pricingLines,
-      inventoryLines: contributions.inventoryLines,
-    });
+    const contributions = mergeContributions(results, PRODUCT_SLICES) as UpdateProductContributions;
+    const payload = buildUpdateSellableProductRequest(productId, values, intent, contributions);
 
     try {
       await awaitWorkflow((idempotencyKey) =>
@@ -104,7 +109,6 @@ export function useProductUpdateSubmit({
     queryClient,
     refetch,
     resetMutation,
-    runDomainSubmit,
     validate,
   ]);
 

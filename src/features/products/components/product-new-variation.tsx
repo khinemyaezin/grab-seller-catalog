@@ -6,8 +6,6 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { ProductFormValue } from "../types";
 import { PricingInlineSlot } from "./pricing-inline-slot";
 import { pricingInstanceId } from "../constants/pricing-instance-id";
-import { InventoryInlineSlot } from "./inventory-inline-slot";
-import { inventoryGroupId } from "../constants/inventory-group-id";
 
 export default function ProductNewVariation() {
     const { control } = useFormContext<ProductFormValue>();
@@ -50,17 +48,7 @@ export default function ProductNewVariation() {
                                 context={{ sku: variant.sku ?? "" }}
                             />
                         ),
-                    },
-                    {
-                        id: "stock",
-                        header: "Stock",
-                        cell: (variant) => (
-                            <InventoryInlineSlot
-                                groupId={inventoryGroupId(variant.matrixKey)}
-                                context={{ sku: variant.sku ?? "" }}
-                            />
-                        ),
-                    },
+                    }
                 ]} />
         </Card>
     )

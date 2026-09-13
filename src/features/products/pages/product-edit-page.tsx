@@ -3,7 +3,6 @@ import { Header } from "@khinemyaezin/seller-ui/layout/header";
 import { SlotProvider, useShellBreadcrumb } from "@khinemyaezin/seller-ui";
 import { useCatalogLink } from "@/features/products/hooks/use-root";
 import ProductEditForm from "@/features/products/components/product-edit-form";
-import { ExtensionSyncProvider } from "@/features/products/context/extension-sync-store";
 import { useProductEditEvents } from "@/features/products/hooks/use-product-edit-events";
 import { Button } from "@khinemyaezin/seller-ui/components/button";
 import { ButtonGroup } from "@khinemyaezin/seller-ui/components/button-group";
@@ -30,11 +29,9 @@ export default function EditProductPage() {
           </ButtonGroup>
       </Header>
       <SlotProvider>
-        <ExtensionSyncProvider>
           {canEdit && (
             <ProductEditForm productId={productId!} onLifecycleEvent={handleEvent} />
           )}
-        </ExtensionSyncProvider>
       </SlotProvider>
     </div>
   );

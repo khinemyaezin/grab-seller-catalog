@@ -4,6 +4,7 @@ import type {
   UPDATE_INTENT,
 } from "@/features/products/types";
 import { generateSlug } from "@/features/products/utils";
+import { tracksInventory } from "../components/manage-inventory-field";
 
 export function determineUpdateIntent({
   hasVariationTypes,
@@ -29,11 +30,13 @@ export function buildUpdateProductRequest(
           typeId: v.typeId,
           optionId: v.optionId,
         })),
+        manageInventory: tracksInventory(variant.manageInventory),
       }))
       : [{
         sku: values.product.standaloneVariant.sku ?? "",
         matrixKey: "",
         variations: [],
+        manageInventory: tracksInventory(values.product.standaloneVariant.manageInventory),
       }];
 
   const types: UpdateProductRequest["variantSync"]["variantTypes"] =

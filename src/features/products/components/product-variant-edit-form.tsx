@@ -1,17 +1,28 @@
 import { FormProvider, useForm, useFormContext, useWatch } from "react-hook-form";
-import { useProductUpdateSubmit } from "@/features/products/hooks/use-product-update-submit";
-import { useProductEdit, DEFAULT_PRODUCT_FORM_VALUE } from "@/features/products/hooks/use-product-edit";
-import { ProductFormValue, ProductLifecycleEvent } from "../types";
-import { useContextBar, useResetAllSlots } from "@khinemyaezin/seller-ui";
-import { useIsExtensionDirty } from "../context/extension-sync-store";
-import { PricingLineEditFullSlot } from "./pricing-edit-full-slot";
-import { pricingEditGroupId } from "@/features/products/constants/pricing-instance-id";
+import { ProductLifecycleEvent } from "../types";
+import {
+  collectSlotFieldErrors,
+  useContextBar,
+  useResetAllSlots,
+  useIsExtensionDirty,
+  useValidateAllSlots,
+} from "@khinemyaezin/seller-ui";
 import { Skeleton } from "@khinemyaezin/seller-ui/components/index";
 import { Card, CardContent } from "@khinemyaezin/seller-ui/components/card";
-import { usePricingEditSlotsSync } from "../hooks/use-pricing-edit-slots-sync";
-import { useInventoryEditSlotsSync } from "../hooks/use-inventory-edit-slots-sync";
-import { InventoryLineEditFullSlot } from "./inventory-edit-full-slot";
 import useProductVariantNameWatch from "../hooks/use-product-variant-name-watch";
+import { ProductVariantForm } from "../types/catalog.form";
+import { useProductVariantEdit } from "../hooks/use-product-variant-edit";
+import { PricingLineEditFullSlot } from "./pricing-edit-full-slot";
+import { InventoryLineEditFullSlot } from "./inventory-edit-full-slot";
+import { pricingEditGroupId } from "../constants/pricing-instance-id";
+import { inventoryEditGroupId } from "../constants/inventory-group-id";
+
+export const DEFAULT_VARIANT_FORM: ProductVariantForm = {
+    name: "",
+    matrixKey: "",
+    sku: "",
+    variations: []
+}
 
 export type ProductVariantEditFormProps = {
     productId: string;
@@ -20,8 +31,8 @@ export type ProductVariantEditFormProps = {
 };
 
 export default function ProductVariantEditForm(props: ProductVariantEditFormProps) {
-    const form = useForm<ProductFormValue>({
-        defaultValues: DEFAULT_PRODUCT_FORM_VALUE,
+    const form = useForm<ProductVariantForm>({
+        defaultValues: DEFAULT_VARIANT_FORM,
         mode: "onSubmit",
     });
 
@@ -37,37 +48,31 @@ function ProductVariantEditFormContent({
     variantId,
     onLifecycleEvent,
 }: ProductVariantEditFormProps) {
-    const { handleSubmit, reset, formState: { isDirty }, control } = useFormContext<ProductFormValue>();
+    const { handleSubmit, reset, formState: { isDirty }, control } = useFormContext<ProductVariantForm>();
 
-    const { isLoading: isFetchingProductById, refetch } = useProductEdit({
+    const { isLoading: isFetchingVariantById, refetch } = useProductVariantEdit({
         productId,
+        variantId,
         onLifecycleEvent,
     });
 
     const [isExtensionDirty, resetExtensionDirty] = useIsExtensionDirty();
     const resetAllSlots = useResetAllSlots();
+    const { validate } = useValidateAllSlots();
     useProductVariantNameWatch({ variantId, onLifecycleEvent });
-    
-    const { submit } = useProductUpdateSubmit({
-        productId,
-        onLifecycleEvent: (event) => {
-            if (event.type === "updated") {
-                resetExtensionDirty();
-            }
-            onLifecycleEvent?.(event);
-        },
-        refetch,
-    });
 
-    const variant = useWatch({
-        control,
-        name: "product.variants",
-        compute: (variants) =>
-          (variants ?? []).find((v) => v.id === variantId),
-    });
+    const sku = useWatch({ control, name: "sku" });
+    const matrixKey = useWatch({ control, name: "matrixKey" });
 
-    const sku = variant?.sku ?? "";
-    
+    const submit = async () => {
+        const results = await validate();
+        const errors = collectSlotFieldErrors(results);
+        if (results.some((result) => !result.valid)) {
+            onLifecycleEvent?.({ type: "validationFailed", errors });
+            throw new Error("Validation failed");
+        }
+    };
+
     useContextBar({
         dirty: isDirty || isExtensionDirty,
         onSave: async () => {
@@ -95,10 +100,7 @@ function ProductVariantEditFormContent({
         label: "Edit Variant",
     });
 
-    usePricingEditSlotsSync();
-    useInventoryEditSlotsSync();
-
-    if (isFetchingProductById) {
+    if (isFetchingVariantById) {
         return (
             <div className="flex w-full flex-col gap-7">
                 <div className="flex flex-col gap-3">
@@ -113,14 +115,16 @@ function ProductVariantEditFormContent({
         <form onSubmit={handleSubmit(submit)} className="flex flex-col gap-6 w-full">
             <Card>
                 <CardContent>
-                    <PricingLineEditFullSlot groupId={pricingEditGroupId(variantId)} context={{ sku, variantId }} />
+                    <PricingLineEditFullSlot
+                        groupId={pricingEditGroupId(matrixKey || variantId)}
+                        context={{ sku: sku ?? "", variantId }}
+                    />
                 </CardContent>
             </Card>
-            <Card>
-                <CardContent>
-                    <InventoryLineEditFullSlot groupId={variantId} context={{ sku, variantId }} />
-                </CardContent>
-            </Card>
+            <InventoryLineEditFullSlot
+                groupId={inventoryEditGroupId(matrixKey || variantId)}
+                context={{ sku: sku ?? "", variantId }}
+            />
         </form>
     );
 }

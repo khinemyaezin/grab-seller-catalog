@@ -34,6 +34,7 @@ export type CreateProductRequestProduct = {
   variants: {
     sku: string | undefined;
     variations: CreateProductRequestVariation[];
+    manageInventory?: boolean;
   }[];
 };
 
@@ -44,7 +45,7 @@ export type CreateProductRequest = {
 
 export type CreateSellableProductRequest = CreateProductRequest & {
   pricingLines: CreateSellableProductPricingLine[],
-  inventoryLines: CreateSellableProductInventoryLine[],
+  inventoryLines?: CreateSellableProductInventoryLine[],
   idempotencyKey?: string;
 }
 
@@ -98,6 +99,7 @@ export interface UpdateProductRequest {
         typeId: string;
         optionId: string;
       }[];
+      manageInventory?: boolean;
     }[];
     variantTypes: {
       typeId: string;
@@ -158,4 +160,9 @@ export interface ProductSearchRequest {
   productStatus?: string
   page: number;
   size: number;
+}
+
+export interface GetVariantRequest {
+  productId: string;
+  variantId: string;
 }

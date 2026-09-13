@@ -1,15 +1,12 @@
 import {
-  PRODUCT_EXTENSION_SLOTS,
-  type InventoryEditContext,
-  type InventoryEditPayload,
+    type InventoryEditContext,
 } from "@khinemyaezin/seller-contracts";
-import { ExtensionSlot } from "@khinemyaezin/seller-ui";
 import { STANDALONE_INVENTORY_EDIT_GROUP_ID } from "../constants/inventory-group-id";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@khinemyaezin/seller-ui/components/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@khinemyaezin/seller-ui/components/card";
 import { useFormContext, useWatch } from "react-hook-form";
 import { ProductFormValue } from "../types";
-import { useSlotDraft } from "../context/extension-sync-store";
-import { INVENTORY_EDIT_DOMAIN } from "../hooks/use-inventory-edit-slots-sync";
+import { ManageInventoryField, tracksInventory } from "./manage-inventory-field";
+import { InventoryLineEditFullSlot } from "./inventory-edit-full-slot";
 
 export function InventoryEditStandalone() {
     const { control } = useFormContext<ProductFormValue>();
@@ -28,10 +25,11 @@ export function InventoryEditStandalone() {
         name: "product.standaloneVariant.id",
         defaultValue: "",
     });
-    const { initialValue, onChange } = useSlotDraft<InventoryEditPayload>(
-        INVENTORY_EDIT_DOMAIN,
-        STANDALONE_INVENTORY_EDIT_GROUP_ID,
-    );
+    const manageInventory = useWatch({
+        control,
+        name: "product.standaloneVariant.manageInventory",
+        defaultValue: true,
+    });
 
     const context: InventoryEditContext = {
         sku: sku ?? "",
@@ -47,20 +45,19 @@ export function InventoryEditStandalone() {
                 <CardDescription>
                     Set stock by location. Confirm a stock operation, then save the product.
                 </CardDescription>
+                <CardAction>
+                    <ManageInventoryField name="product.standaloneVariant.manageInventory" />
+                </CardAction>
             </CardHeader>
 
-            <CardContent>
-                <ExtensionSlot
-                    name={PRODUCT_EXTENSION_SLOTS.EDIT_INVENTORY}
-                    fallback={(<p>Unable to load inventory</p>)}
-                    props={{
-                        groupId: STANDALONE_INVENTORY_EDIT_GROUP_ID,
-                        context,
-                        initialValue,
-                        onChange,
-                    }}
-                />
-            </CardContent>
+            {tracksInventory(manageInventory) && (
+                <CardContent>
+                    <InventoryLineEditFullSlot
+                        groupId={STANDALONE_INVENTORY_EDIT_GROUP_ID}
+                        context={context}
+                    />
+                </CardContent>
+            )}
         </Card>
     );
 }

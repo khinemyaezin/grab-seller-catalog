@@ -16,6 +16,7 @@ export function buildUpdateSellableProductRequest(
     productId,
     product: buildUpdateProductRequest(values, intent),
     pricingLines: [],
+    inventoryLines: [],
     ...contributions,
   };
 }

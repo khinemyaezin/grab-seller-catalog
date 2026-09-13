@@ -11,13 +11,10 @@ import ProductEditVariation from "./product-edit-variation";
 import { PricingEditStandalone } from "./pricing-edit-standalone";
 import { resolveLink } from "@khinemyaezin/seller-api";
 import ActionButtonGroup from "./product-edit-actions";
-import { useContextBar, useResetAllSlots } from "@khinemyaezin/seller-ui";
-import { useIsExtensionDirty } from "../context/extension-sync-store";
+import { useContextBar, useResetAllSlots, useIsExtensionDirty } from "@khinemyaezin/seller-ui";
 import useProductNameWatch from "../hooks/use-product-name-watch";
 import { InventoryEditStandalone } from "./inventory-edit-standalone";
 import { useMatrixSync } from "../hooks/use-matrix-sync";
-import { usePricingEditSlotsSync } from "../hooks/use-pricing-edit-slots-sync";
-import { useInventoryEditSlotsSync } from "../hooks/use-inventory-edit-slots-sync";
 
 export type ProductEditFormProps = {
     productId: string;
@@ -93,8 +90,6 @@ function ProductEditFormContent({
 
     const productPublishLink = resolveLink(actions, "publish-product");
     useMatrixSync();
-    usePricingEditSlotsSync();
-    useInventoryEditSlotsSync();
 
     if (isFetchingProductById) {
         return (

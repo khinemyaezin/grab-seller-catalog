@@ -2,7 +2,6 @@ import { Link, useParams } from "react-router";
 import { Header } from "@khinemyaezin/seller-ui/layout/header";
 import { SlotProvider, useShellBreadcrumb } from "@khinemyaezin/seller-ui";
 import { useCatalogLink } from "@/features/products/hooks/use-root";
-import { ExtensionSyncProvider } from "@/features/products/context/extension-sync-store";
 import { useProductEditEvents } from "@/features/products/hooks/use-product-edit-events";
 import { Button } from "@khinemyaezin/seller-ui/components/button";
 import { ButtonGroup } from "@khinemyaezin/seller-ui/components/button-group";
@@ -30,7 +29,6 @@ export default function ProductVariantEditPage() {
         </ButtonGroup>
       </Header>
       <SlotProvider>
-        <ExtensionSyncProvider>
           {canEdit && (
             <ProductVariantEditView
               productId={productId!}
@@ -38,7 +36,6 @@ export default function ProductVariantEditPage() {
               onLifecycleEvent={handleEvent}
             />
           )}
-        </ExtensionSyncProvider>
       </SlotProvider>
     </div>
   );

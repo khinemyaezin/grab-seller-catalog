@@ -6,6 +6,7 @@ export interface CatalogRoot {
   searchProducts?: HateoasLink
   createProduct?: HateoasLink
   getProduct?: HateoasLink
+  getVariant?: HateoasLink
   searchCategoryLeaves?: HateoasLink
   searchVariantTypes?: HateoasLink
   searchVariantOptions?: HateoasLink
@@ -56,6 +57,23 @@ export interface ProductSearchResponse {
   page: HateoasPageMetadata;
 }
 
+export interface GetVariantResponse {
+  productId: string;
+  productName: string;
+  variantId: string;
+  sku: string;
+  status: string;
+  matrixKey: string;
+  variations: {
+    optionId: string;
+    optionName: string;
+    typeId: string;
+    typeName: string;
+  }[];
+  manageInventory: boolean;
+  _links?: Record<string, HateoasLink>;
+}
+
 export interface GetFullProductResponse {
   id: string;
   name: string;
@@ -79,6 +97,7 @@ export interface GetFullProductResponse {
     sku: string;
     status: string;
     matrixKey: string;
+    manageInventory?: boolean;
     variations: {
       optionId: string;
       optionName: string;

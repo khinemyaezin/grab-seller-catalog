@@ -1,7 +1,14 @@
 import { useMemo } from "react";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@khinemyaezin/seller-ui/components/card";
-import { Badge, Skeleton } from "@khinemyaezin/seller-ui/components/index";
+import { Skeleton } from "@khinemyaezin/seller-ui/components/index";
+import {
+  Item,
+  ItemContent,
+  ItemGroup,
+  ItemTitle,
+} from "@khinemyaezin/seller-ui/components/item";
+import { RadioGroup, RadioGroupItem } from "@khinemyaezin/seller-ui/components/radio-group";
 import { useCatalogLink } from "../hooks/use-root";
 import { useProductGet } from "../hooks/use-products";
 import ProductVariantEditForm from "./product-variant-edit-form";
@@ -18,6 +25,7 @@ export default function ProductVariantEditView({
   variantId,
   onLifecycleEvent,
 }: ProductVariantEditViewProps) {
+  const navigate = useNavigate();
   const getProductLink = useCatalogLink("getProduct");
   const { data: product, isLoading } = useProductGet(getProductLink, productId);
 
@@ -35,20 +43,27 @@ export default function ProductVariantEditView({
   if (isLoading || !product) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-        <div className="md:col-span-4 lg:col-span-3">
-          <Card>
-            <CardHeader className="pb-3">
+        <div className="md:col-span-5 lg:col-span-4">
+          <Card className="py-0 gap-0 overflow-hidden">
+            <CardHeader className="border-b py-5">
               <Skeleton className="h-5 w-24" />
               <Skeleton className="h-4 w-16 mt-1" />
             </CardHeader>
-            <CardContent className="p-2 space-y-2">
-              <Skeleton className="h-12 w-full rounded-md" />
-              <Skeleton className="h-12 w-full rounded-md" />
-              <Skeleton className="h-12 w-full rounded-md" />
-            </CardContent>
+            <ItemGroup className="gap-0 divide-y divide-border">
+              <Item className="rounded-none border-0">
+                <ItemContent>
+                  <Skeleton className="h-5 w-20" />
+                </ItemContent>
+              </Item>
+              <Item className="rounded-none border-0">
+                <ItemContent>
+                  <Skeleton className="h-5 w-16" />
+                </ItemContent>
+              </Item>
+            </ItemGroup>
           </Card>
         </div>
-        <div className="md:col-span-8 lg:col-span-9 space-y-6">
+        <div className="md:col-span-7 lg:col-span-8 space-y-6">
           <Skeleton className="h-48 w-full rounded-xl" />
           <Skeleton className="h-48 w-full rounded-xl" />
         </div>
@@ -59,57 +74,54 @@ export default function ProductVariantEditView({
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
       <div className="md:col-span-5 lg:col-span-4">
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="py-0 gap-0 overflow-hidden">
+          <CardHeader className="border-b py-5">
             <CardTitle className="text-base font-semibold">Variants</CardTitle>
             <CardDescription>
               {variants.length} {variants.length === 1 ? "variant" : "variants"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-1">
-            {variants.length === 0 ? (
-              <p className="p-3 text-sm text-muted-foreground">No variants found</p>
-            ) : (
-              variants.map((v) => {
-                const isSelected = v.id === currentVariantId;
-                const variantName =
-                  v.variations
-                    ?.map((item) => item.optionName || nameMap[item.optionId] || "")
-                    .filter(Boolean)
-                    .join(" / ") || v.sku || "Variant";
+          {variants.length === 0 ? (
+            <p className="px-6 py-4 text-sm text-muted-foreground">No variants found</p>
+          ) : (
+            <RadioGroup
+              value={currentVariantId}
+              onValueChange={(id) => navigate(`/products/${productId}/variants/${id}`)}
+            >
+              <ItemGroup className="gap-0 divide-y divide-border">
+                {variants.map((v) => {
+                  const isSelected = v.id === currentVariantId;
+                  const variantName =
+                    v.variations
+                      ?.map((item) => item.optionName || nameMap[item.optionId] || "")
+                      .filter(Boolean)
+                      .join(" / ") || v.sku || "Variant";
 
-                return (
-                  <Link
-                    key={v.id || v.matrixKey}
-                    to={`/products/${productId}/variants/${v.id}`}
-                    className={`flex flex-col p-3 rounded-md transition-colors text-sm ${isSelected
-                        ? "bg-accent text-accent-foreground font-medium border border-primary/20 shadow-xs"
-                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  return (
+                    <Item
+                      key={v.id || v.matrixKey}
+                      asChild
+                      variant={isSelected ? "muted" : "default"}
+                      className={`cursor-pointer rounded-none border-0 transition-colors ${
+                        isSelected
+                          ? "bg-muted text-foreground font-medium"
+                          : "bg-card text-foreground hover:bg-muted/50"
                       }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-medium text-foreground">
-                        {variantName}
-                      </span>
-                      {v.status && (
-                        <Badge
-                          variant={v.status === "ACTIVE" ? "default" : "secondary"}
-                          className="text-xs shrink-0"
-                        >
-                          {v.status}
-                        </Badge>
-                      )}
-                    </div>
-                    {v.sku && (
-                      <span className="text-xs text-muted-foreground mt-0.5 truncate">
-                        SKU: {v.sku}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })
-            )}
-          </CardContent>
+                    >
+                      <label htmlFor={`variant-${v.id}`}>
+                        <RadioGroupItem value={v.id} id={`variant-${v.id}`} hidden />
+                        <ItemContent>
+                          <ItemTitle className="select-none">
+                            {variantName}
+                          </ItemTitle>
+                        </ItemContent>
+                      </label>
+                    </Item>
+                  );
+                })}
+              </ItemGroup>
+            </RadioGroup>
+          )}
         </Card>
       </div>
 

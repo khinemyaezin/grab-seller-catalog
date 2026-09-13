@@ -6,6 +6,8 @@ import type {
   CreateSellableProductRequest,
   CreateSellableProductResponse,
   GetFullProductResponse,
+  GetVariantRequest,
+  GetVariantResponse,
   UpdateProductRequest,
   UpdateProductResponse,
   UpdateSellableProductRequest,
@@ -114,6 +116,24 @@ export function useProductGet(productLink: HateoasLink | undefined, productId: s
     queryKey: ["product", productId],
     queryFn: async () => catalogService.getFullProduct(extendedLink!),
     enabled: !!productLink,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useProductVariantGet(
+  variantLink: HateoasLink | undefined,
+  request: GetVariantRequest,
+) {
+  const extendedLink =
+    variantLink &&
+    resolveUrlTemplate(
+      { productId: request.productId, variantId: request.variantId },
+      variantLink,
+    );
+  return useQuery<GetVariantResponse, Error>({
+    queryKey: ["product", request.productId, "variant", request.variantId],
+    queryFn: async () => catalogService.getVariant(extendedLink!),
+    enabled: !!variantLink && !!request.productId && !!request.variantId,
     staleTime: 5 * 60 * 1000,
   });
 }
