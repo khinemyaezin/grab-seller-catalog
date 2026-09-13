@@ -29,6 +29,7 @@ export type {
   UpdateSellableProductPricingLine,
   UPDATE_INTENT,
   ProductSearchRequest,
+  GetVariantRequest,
   VariationMatrixRequest,
   VariationMatrixRequestVariation,
   VariationMatrixRequestVariantType,
@@ -42,6 +43,7 @@ export type {
   ProductResponse,
   ProductSearchResponse,
   GetFullProductResponse,
+  GetVariantResponse,
   VariationMatrixResponse,
   VariationMatrixResponseVariation,
   VariationMatrixResponseVariantType,
@@ -59,4 +61,6 @@ export type {
 export type {
   ProductFormValue,
   ProductFilterFormValue,
+  ProductVariantForm,
 } from "./catalog.form";
+

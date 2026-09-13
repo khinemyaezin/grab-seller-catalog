@@ -3,16 +3,13 @@ import { ProductFormValue } from "../types";
 import type { ProductLifecycleEvent } from "../types";
 import { HateoasLink } from "@khinemyaezin/seller-api";
 import { useProductCreateSubmit } from "@/features/products/hooks/use-product-create-submit";
-import { useIsExtensionDirty } from "@/features/products/context/extension-sync-store";
-import { useContextBar, useResetAllSlots } from "@khinemyaezin/seller-ui";
+import { useContextBar, useResetAllSlots, useIsExtensionDirty } from "@khinemyaezin/seller-ui";
 import { Card, CardContent } from "@khinemyaezin/seller-ui/components/card";
 import { PricingStandalone } from "./pricing-standalone";
 import { InventoryStandalone } from "./inventory-standalone";
 import ProductBasicFieldSet from "./product-basic-fieldset";
 import ProductNewVariation from "./product-new-variation";
 import { useMatrixSync } from "../hooks/use-matrix-sync";
-import { usePricingSlotsSync } from "../hooks/use-pricing-slots-sync";
-import { useInventorySlotsSync } from "../hooks/use-inventory-slots-sync";
 
 export type ProductNewFormProps = {
   link: HateoasLink;
@@ -26,6 +23,7 @@ const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
     variants: [],
     standaloneVariant: {
       sku: "",
+      manageInventory: false,
     },
   },
   variationTypes: [],
@@ -65,8 +63,6 @@ function ProductNewFormContent({ link, onLifecycleEvent }: ProductNewFormProps) 
   });
 
   useMatrixSync();
-  usePricingSlotsSync();
-  useInventorySlotsSync();
 
   useContextBar({
     dirty: isDirty || isExtensionDirty,

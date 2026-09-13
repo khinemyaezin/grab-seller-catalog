@@ -1,4 +1,4 @@
-import type { ExtensionFieldErrors } from "@khinemyaezin/seller-contracts";
+import type { SlotValidationErrors } from "@khinemyaezin/seller-contracts";
 
 export type Product = {
   name: string;
@@ -18,6 +18,7 @@ export type Variant = {
   sku: string;
   id?: string;
   variations: Variation[];
+  manageInventory?: boolean;
 };
 
 export type Variation = {
@@ -61,7 +62,7 @@ export type ProductLifecycleEvent =
   | { type: "created" }
   | { type: "createFailed" }
   | { type: "createTimedOut" }
-  | { type: "validationFailed"; name?: string; errors?: ExtensionFieldErrors }
+  | { type: "validationFailed"; name?: string; errors?: SlotValidationErrors }
   | { type: "updated" }
   | { type: "updateFailed" }
   | { type: "updateTimedOut" }

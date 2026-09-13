@@ -1,4 +1,4 @@
-import type { Product, ProductStatus, VariationType } from "./catalog.model";
+import type { Product, ProductStatus, Variant, VariationType } from "./catalog.model";
 
 export type ProductFormValue = {
   product: Product;
@@ -11,3 +11,5 @@ export type ProductFilterFormValue = {
   page: number;
   size: number;
 };
+
+export type ProductVariantForm = Variant;

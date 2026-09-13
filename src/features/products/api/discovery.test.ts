@@ -12,6 +12,7 @@ describe("catalog discovery", () => {
         self: { href: "/catalog" },
         "search-products": { href: "/catalog/products/search" },
         "get-product": { href: "/catalog/products/{id}", templated: true },
+        "get-variant": { href: "/catalog/products/{productId}/variants/{variantId}", templated: true },
         "create-product": { href: "/catalog/products" },
         "search-category-leaves": { href: "/catalog/categories/leaves" },
         "search-variant-types": { href: "/catalog/variant-types" },
@@ -28,6 +29,8 @@ describe("catalog discovery", () => {
     expect(root.searchProducts?.href).toBe("/catalog/products/search");
     expect(root.getProduct?.href).toBe("/catalog/products/{id}");
     expect(root.getProduct?.templated).toBe(true);
+    expect(root.getVariant?.href).toBe("/catalog/products/{productId}/variants/{variantId}");
+    expect(root.getVariant?.templated).toBe(true);
     expect(root.createProduct?.href).toBe("/catalog/products");
     expect(root.searchCategoryLeaves?.href).toBe("/catalog/categories/leaves");
     expect(root.searchVariantTypes?.href).toBe("/catalog/variant-types");

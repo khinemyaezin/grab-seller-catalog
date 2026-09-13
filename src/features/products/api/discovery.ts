@@ -9,6 +9,7 @@ export async function fetchCatalogRoot(link: HateoasLink): Promise<CatalogRoot> 
     self: resolveLink(response._links, "self"),
     searchProducts: resolveLink(response._links, "search-products"),
     getProduct: resolveLink(response._links, "get-product"),
+    getVariant: resolveLink(response._links, "get-variant"),
     createProduct: resolveLink(response._links, "create-product"),
     searchCategoryLeaves: resolveLink(response._links, "search-category-leaves"),
     searchVariantTypes: resolveLink(response._links, "search-variant-types"),

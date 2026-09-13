@@ -4,6 +4,7 @@ import type {
   CreateSellableProductRequest,
   CreateSellableProductResponse,
   GetFullProductResponse,
+  GetVariantResponse,
   GetVariationOptionResult,
   GetVariationTypeResult,
   UpdateProductRequest,
@@ -44,6 +45,9 @@ export const catalogService = {
 
   getFullProduct: (link: HateoasLink, headers?: Record<string, string>) =>
     api.followLink<GetFullProductResponse>(link, "GET", undefined, undefined, headers),
+
+  getVariant: (link: HateoasLink, headers?: Record<string, string>) =>
+    api.followLink<GetVariantResponse>(link, "GET", undefined, undefined, headers),
 
   updateProduct: (link: HateoasLink, request: UpdateProductRequest, headers?: Record<string, string>) =>
     api.followLink<UpdateProductResponse>(link, "PUT", request, undefined, headers),

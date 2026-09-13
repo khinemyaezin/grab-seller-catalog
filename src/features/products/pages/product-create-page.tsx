@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router";
 import { Header } from "@khinemyaezin/seller-ui/layout/header";
 import { SlotProvider, usePlatform } from "@khinemyaezin/seller-ui";
 import ProductNewForm from "@/features/products/components/product-new-form";
-import { ExtensionSyncProvider } from "@/features/products/context/extension-sync-store";
 import { useCatalogLink } from "../hooks/use-root";
 import { useProductCreateEvents } from "@/features/products/hooks/use-product-create-events";
 import { Button } from "@khinemyaezin/seller-ui/components/button";
@@ -44,12 +43,10 @@ export default function NewProductPage({ }: ProductCreatePageProps) {
       </Header>
       {createSellableProductLink && (
         <SlotProvider>
-          <ExtensionSyncProvider>
             <ProductNewForm
               link={createSellableProductLink}
               onLifecycleEvent={handleEvent}
             />
-          </ExtensionSyncProvider>
         </SlotProvider>
       )}
     </div>

@@ -113,6 +113,7 @@ function responseToVariant(
             id: previous?.id,
             variantId: previous?.id ?? previous?.variantId,
             price: previous?.price ?? "0.00",
+            manageInventory: previous?.manageInventory === true,
             variations: v.variations.map((vv) => ({
                 optionId: vv.optionId,
                 typeId: vv.typeId,
