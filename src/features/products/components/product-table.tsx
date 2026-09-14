@@ -105,7 +105,12 @@ export default function ProductTable({ link, filter, onPageChange, onLifecycleEv
                 </div>
               </TableCell>
               <TableCell className="grid grid-rows-2 gap-1">
-                <span className="font-medium">{product.name}</span>
+                <Link
+                  to={product.productId}
+                  className="font-medium hover:underline"
+                >
+                  {product.name}
+                </Link>
                 <span className="font-normal text-muted-foreground">{product.categoryName}</span>
               </TableCell>
               <TableCell>
@@ -122,12 +127,6 @@ export default function ProductTable({ link, filter, onPageChange, onLifecycleEv
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuGroup>
-                      {hasLink(product._links, "update-product") && (
-                        <DropdownMenuItem asChild>
-                          <Link to={product.productId}>Edit</Link>
-                        </DropdownMenuItem>
-                      )}
-
                       {resolveLink(product._links, "delete-product") && (
                         <DropdownMenuItem variant="destructive"
                           disabled={deleteProductMutation.isPending}

@@ -1,12 +1,8 @@
-import { Link, useParams } from "react-router";
-import { Header } from "@khinemyaezin/seller-ui/layout/header";
+import { useParams } from "react-router";
 import { SlotProvider, useShellBreadcrumb } from "@khinemyaezin/seller-ui";
 import { useCatalogLink } from "@/features/products/hooks/use-root";
-import ProductEditForm from "@/features/products/components/product-edit-form";
+import ProductEditView from "@/features/products/components/product-edit-view";
 import { useProductEditEvents } from "@/features/products/hooks/use-product-edit-events";
-import { Button } from "@khinemyaezin/seller-ui/components/button";
-import { ButtonGroup } from "@khinemyaezin/seller-ui/components/button-group";
-import { ArrowLeftIcon } from "lucide-react";
 
 export default function EditProductPage() {
   const { productId } = useParams<{ productId: string }>();
@@ -15,23 +11,11 @@ export default function EditProductPage() {
   useShellBreadcrumb(title);
 
   return (
-    <div className="container mx-auto max-w-5xl p-6">
-      <Header
-        title="Edit Product"
-        description="Update your product details."
-      >
-        <ButtonGroup>
-          <Button type="button" variant="secondary" asChild>
-            <Link to=".." className="flex gap-2 items-center">
-              <ArrowLeftIcon />
-            </Link>
-          </Button>
-          </ButtonGroup>
-      </Header>
+    <div className="container mx-auto max-w-2xl p-6">
       <SlotProvider>
-          {canEdit && (
-            <ProductEditForm productId={productId!} onLifecycleEvent={handleEvent} />
-          )}
+        {canEdit && productId && (
+          <ProductEditView productId={productId} onLifecycleEvent={handleEvent} />
+        )}
       </SlotProvider>
     </div>
   );
