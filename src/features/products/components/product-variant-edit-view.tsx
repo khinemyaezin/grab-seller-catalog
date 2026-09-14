@@ -1,18 +1,18 @@
-import { useMemo } from "react";
-import { useNavigate } from "react-router";
+import { ReactNode, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@khinemyaezin/seller-ui/components/card";
-import { Skeleton } from "@khinemyaezin/seller-ui/components/index";
-import {
-  Item,
-  ItemContent,
-  ItemGroup,
-  ItemTitle,
-} from "@khinemyaezin/seller-ui/components/item";
-import { RadioGroup, RadioGroupItem } from "@khinemyaezin/seller-ui/components/radio-group";
+import { QueryState } from "@khinemyaezin/seller-ui/components/query-state";
 import { useCatalogLink } from "../hooks/use-root";
 import { useProductGet } from "../hooks/use-products";
+import { useProductVariantEdit } from "../hooks/use-product-variant-edit";
 import ProductVariantEditForm from "./product-variant-edit-form";
-import type { ProductLifecycleEvent } from "../types";
+import ProductVariantNav from "./product-variant-nav";
+import ProductVariantActionsMenu from "./product-variant-edit-actions";
+import type { Product, ProductLifecycleEvent } from "../types";
+import { Header } from "@khinemyaezin/seller-ui";
+import { Button } from "@khinemyaezin/seller-ui/components/button";
+import { ButtonGroup } from "@khinemyaezin/seller-ui/components/button-group";
+import { ArrowLeftIcon, ImageIcon } from "lucide-react";
+import { Link } from "react-router";
 
 export type ProductVariantEditViewProps = {
   productId: string;
@@ -25,132 +25,125 @@ export default function ProductVariantEditView({
   variantId,
   onLifecycleEvent,
 }: ProductVariantEditViewProps) {
-  const navigate = useNavigate();
   const getProductLink = useCatalogLink("getProduct");
-  const { data: product, isLoading, isError } = useProductGet(getProductLink, productId);
-
-  const nameMap = useMemo(() => {
-    return Object.fromEntries(
-      product?.variantTypes?.flatMap((t) =>
-        t.options.map((o) => [o.optionId, o.optionName])
-      ) ?? []
-    );
-  }, [product?.variantTypes]);
+  const { data: product, isLoading: isProductLoading, isError: isProductError } = useProductGet(getProductLink, productId);
 
   const variants = product?.variants ?? [];
   const currentVariantId = variantId || variants[0]?.id || "";
 
-  if (isError && !product) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          Failed to load product variants.
-        </CardContent>
-      </Card>
-    );
-  }
+  const {
+    isLoading: isVariantLoading,
+    isError: isVariantError,
+    seed,
+    actions,
+  } = useProductVariantEdit({
+    productId,
+    variantId: currentVariantId,
+  });
 
-  if (isLoading || !product) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-        <div className="md:col-span-5 lg:col-span-4">
-          <Card className="py-0 gap-0 overflow-hidden">
-            <CardHeader className="border-b py-5">
-              <Skeleton className="h-5 w-24" />
-              <Skeleton className="h-4 w-16 mt-1" />
-            </CardHeader>
-            <ItemGroup className="gap-0 divide-y divide-border">
-              <Item className="rounded-none border-0">
-                <ItemContent>
-                  <Skeleton className="h-5 w-20" />
-                </ItemContent>
-              </Item>
-              <Item className="rounded-none border-0">
-                <ItemContent>
-                  <Skeleton className="h-5 w-16" />
-                </ItemContent>
-              </Item>
-            </ItemGroup>
-          </Card>
-        </div>
-        <div className="md:col-span-7 lg:col-span-8 space-y-6">
-          <Skeleton className="h-48 w-full rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-xl" />
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (seed?.name) {
+      onLifecycleEvent?.({ type: "titleResolved", title: seed.name });
+    }
+  }, [onLifecycleEvent, seed?.name]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-      <div className="md:col-span-5 lg:col-span-4">
-        <Card className="py-0 gap-0 overflow-hidden">
-          <CardHeader className="border-b py-5">
-            <CardTitle className="text-base font-semibold">Variants</CardTitle>
-            <CardDescription>
-              {variants.length} {variants.length === 1 ? "variant" : "variants"}
-            </CardDescription>
-          </CardHeader>
-          {variants.length === 0 ? (
-            <p className="px-6 py-4 text-sm text-muted-foreground">No variants found</p>
+    <>
+      <Header
+        title={seed?.name ?? "Edit Variant"}
+        description="Update variant details, pricing, and inventory."
+      >
+        <ButtonGroup>
+          <ButtonGroup>
+            <Button type="button" variant="secondary" asChild>
+              <Link to="../.." relative="path" className="flex gap-2 items-center">
+                <ArrowLeftIcon />
+              </Link>
+            </Button>
+          </ButtonGroup>
+          <ButtonGroup>
+            <ProductVariantActionsMenu productId={productId} links={actions} onLifecycleEvent={onLifecycleEvent} />
+          </ButtonGroup>
+        </ButtonGroup>
+      </Header>
+      <QueryState isLoading={isProductLoading || !product} isError={isProductError && !product}>
+        {<div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+          <div className="md:col-span-5 lg:col-span-4">
+            <ProductInfoView product={product!}>
+              <ProductVariantNav
+                variants={variants}
+                variantTypes={product?.variantTypes}
+                currentVariantId={currentVariantId}
+              />
+            </ProductInfoView>
+          </div>
+
+          <div className="md:col-span-7 lg:col-span-8">
+            {currentVariantId ? (
+              <QueryState
+                isLoading={isVariantLoading || !seed}
+                isError={isVariantError && !seed}
+              >
+                {seed ? (
+                  <ProductVariantEditForm
+                    key={currentVariantId}
+                    productId={productId}
+                    variantId={currentVariantId}
+                    seed={seed}
+                    onLifecycleEvent={onLifecycleEvent}
+                  />
+                ) : null}
+              </QueryState>
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Select a variant to edit
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>}
+      </QueryState>
+    </>
+  );
+}
+
+type ProductInfoViewProps = {
+  product: {
+    name: string;
+    variants?: unknown[];
+    image?: string;
+  };
+  children: ReactNode;
+};
+
+function ProductInfoView({ product, children }: ProductInfoViewProps) {
+  const variantCount = product.variants?.length ?? 0;
+
+  return (
+    <Card className="py-0 gap-0 overflow-hidden">
+      <CardHeader className="border-b p-4 flex flex-row items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center border bg-muted overflow-hidden">
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.name ?? "Product image"}
+              className="h-full w-full object-cover"
+            />
           ) : (
-            <RadioGroup
-              value={currentVariantId}
-              onValueChange={(id) => navigate(`../${id}`, { relative: "path" })}
-            >
-              <ItemGroup className="gap-0 divide-y divide-border">
-                {variants.map((v) => {
-                  const isSelected = v.id === currentVariantId;
-                  const variantName =
-                    v.variations
-                      ?.map((item) => item.optionName || nameMap[item.optionId] || "")
-                      .filter(Boolean)
-                      .join(" / ") || v.sku || "Variant";
-
-                  return (
-                    <Item
-                      key={v.id || v.matrixKey}
-                      asChild
-                      variant={isSelected ? "muted" : "default"}
-                      className={`cursor-pointer rounded-none border-0 transition-colors ${
-                        isSelected
-                          ? "bg-muted text-foreground font-medium"
-                          : "bg-card text-foreground hover:bg-muted/50"
-                      }`}
-                    >
-                      <label htmlFor={`variant-${v.id}`}>
-                        <RadioGroupItem value={v.id} id={`variant-${v.id}`} hidden />
-                        <ItemContent>
-                          <ItemTitle className="select-none">
-                            {variantName}
-                          </ItemTitle>
-                        </ItemContent>
-                      </label>
-                    </Item>
-                  );
-                })}
-              </ItemGroup>
-            </RadioGroup>
+            <ImageIcon className="h-6 w-6 text-muted-foreground" />
           )}
-        </Card>
-      </div>
-
-      <div className="md:col-span-7 lg:col-span-8">
-        {currentVariantId ? (
-          <ProductVariantEditForm
-            key={currentVariantId}
-            productId={productId}
-            variantId={currentVariantId}
-            onLifecycleEvent={onLifecycleEvent}
-          />
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              Select a variant to edit
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
+        </div>
+        <div className="flex flex-col min-w-0 flex-1">
+          <CardTitle className="text-base font-semibold truncate leading-tight">
+            {product.name}
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">
+            {variantCount} {variantCount === 1 ? "variant" : "variants"}
+          </CardDescription>
+        </div>
+      </CardHeader>
+      {children}
+    </Card>
   );
 }

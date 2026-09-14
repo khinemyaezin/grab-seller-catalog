@@ -19,7 +19,7 @@ export default function ProductVariantFieldSet() {
     <FieldSet>
       <FieldLegend>Variant Information</FieldLegend>
       <FieldDescription>
-        Update this variant's SKU. Name is derived from its options.
+        Name is derived from its options.
       </FieldDescription>
       <FieldGroup>
         <div className="grid grid-rows-1 lg:grid-cols-2 gap-4">

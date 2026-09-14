@@ -5,7 +5,6 @@ import {
   useResetAllSlots,
   useIsExtensionDirty,
 } from "@khinemyaezin/seller-ui";
-import { Skeleton } from "@khinemyaezin/seller-ui/components/index";
 import {
   Card,
   CardAction,
@@ -18,7 +17,6 @@ import type {
   ProductLifecycleEvent,
   ProductVariantForm,
 } from "../types";
-import { useProductVariantEdit } from "../hooks/use-product-variant-edit";
 import { useProductVariantUpdateSubmit } from "../hooks/use-product-variant-update-submit";
 import { PricingLineEditFullSlot } from "./pricing-edit-full-slot";
 import { InventoryLineEditFullSlot } from "./inventory-edit-full-slot";
@@ -30,68 +28,16 @@ import { ManageInventoryField, tracksInventory } from "./manage-inventory-field"
 export type ProductVariantEditFormProps = {
   productId: string;
   variantId: string;
+  seed: ProductVariantForm;
   onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
 };
 
 export default function ProductVariantEditForm({
   productId,
   variantId,
-  onLifecycleEvent,
-}: ProductVariantEditFormProps) {
-  const { isLoading, isError, seed } = useProductVariantEdit({
-    productId,
-    variantId,
-  });
-
-  useEffect(() => {
-    if (seed?.name) {
-      onLifecycleEvent?.({ type: "titleResolved", title: seed.name });
-    }
-  }, [onLifecycleEvent, seed?.name]);
-
-  if (isError && !seed) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Failed to load variant.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (isLoading || !seed) {
-    return (
-      <div className="flex w-full flex-col gap-7">
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-8 w-full" />
-        </div>
-        <Skeleton className="h-48 w-full rounded-xl" />
-        <Skeleton className="h-48 w-full rounded-xl" />
-      </div>
-    );
-  }
-
-  return (
-    <ProductVariantEditFormContent
-      productId={productId}
-      variantId={variantId}
-      seed={seed}
-      onLifecycleEvent={onLifecycleEvent}
-    />
-  );
-}
-
-type ProductVariantEditFormContentProps = ProductVariantEditFormProps & {
-  seed: ProductVariantForm;
-};
-
-function ProductVariantEditFormContent({
-  productId,
-  variantId,
   seed,
   onLifecycleEvent,
-}: ProductVariantEditFormContentProps) {
+}: ProductVariantEditFormProps) {
   const form = useForm<ProductVariantForm>({
     defaultValues: seed,
     mode: "onSubmit",
@@ -119,7 +65,7 @@ function ProductVariantEditFormFields({
   variantId,
   seed,
   onLifecycleEvent,
-}: ProductVariantEditFormContentProps) {
+}: ProductVariantEditFormProps) {
   const { handleSubmit, reset, formState: { isDirty }, control } = useFormContext<ProductVariantForm>();
   const [isExtensionDirty, resetExtensionDirty] = useIsExtensionDirty();
   const resetAllSlots = useResetAllSlots();

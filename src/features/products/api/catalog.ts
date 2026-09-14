@@ -83,4 +83,10 @@ export const catalogService = {
     headers?: Record<string, string>,
   ) =>
     api.followLink<UpdateProductVariantResponse>(link, "POST", request, undefined, headers),
+
+  deleteProductVariant: (link: HateoasLink, headers?: Record<string, string>) =>
+    api.followLink<void>(link, "DELETE", undefined, undefined, headers),
+
+  restoreProductVariant: (link: HateoasLink, headers?: Record<string, string>) =>
+    api.followLink<void>(link, "POST", undefined, undefined, headers),
 };

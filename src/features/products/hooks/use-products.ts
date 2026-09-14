@@ -108,6 +108,32 @@ export function useProductRestoreMutation() {
   });
 }
 
+export function useProductVariantDeleteMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { link: HateoasLink; productId?: string }>({
+    mutationFn: ({ link }) => catalogService.deleteProductVariant(link),
+    onSuccess: (_, variables) => {
+      invalidateProductsQueries(queryClient);
+      if (variables.productId) {
+        invalidateProductDetailQueries(queryClient, variables.productId);
+      }
+    },
+  });
+}
+
+export function useProductVariantRestoreMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { link: HateoasLink; productId?: string }>({
+    mutationFn: ({ link }) => catalogService.restoreProductVariant(link),
+    onSuccess: (_, variables) => {
+      invalidateProductsQueries(queryClient);
+      if (variables.productId) {
+        invalidateProductDetailQueries(queryClient, variables.productId);
+      }
+    },
+  });
+}
+
 export function useProductSearch(productsLink: HateoasLink, filters: ProductFilterFormValue) {
   const request: ProductSearchRequest = {
     ...filters,

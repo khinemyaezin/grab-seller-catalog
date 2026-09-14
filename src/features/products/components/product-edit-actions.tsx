@@ -1,15 +1,22 @@
 import { HateoasLink, resolveLink } from "@khinemyaezin/seller-api";
 import { useProductDeleteMutation, useProductRestoreMutation } from "../hooks/use-products";
 import { ProductLifecycleEvent } from "../types";
-import { Archive, RotateCcw } from "lucide-react";
-import { Button, ButtonStatus } from "@khinemyaezin/seller-ui/components/index";
+import { Archive, Ellipsis, RotateCcw } from "lucide-react";
+import { Button } from "@khinemyaezin/seller-ui/components/index";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@khinemyaezin/seller-ui/components/dropdown-menu";
 
-export type ActionButtonGroupProps = {
+export type ProductActionsMenuProps = {
     links?: Record<string, HateoasLink>;
     onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
 }
 
-export default function ActionButtonGroup({ links, onLifecycleEvent }: ActionButtonGroupProps) {
+export default function ProductActionsMenu({ links, onLifecycleEvent }: ProductActionsMenuProps) {
     const productDeleteLink = resolveLink(links, "delete-product");
     const productRestoreLink = resolveLink(links, "restore-product");
 
@@ -38,59 +45,36 @@ export default function ActionButtonGroup({ links, onLifecycleEvent }: ActionBut
         );
     }
 
-    const actionButtons = [
-        {
-            key: "restore",
-            show: Boolean(productRestoreLink),
-            onClick: handleOnRestore,
-            mutation: restoreProductMutation,
-            variant: "secondary" as const,
-            pendingLabel: "Restoring",
-            successLabel: "Restored",
-            label: "Restore",
-            Icon: RotateCcw,
-        },
-        {
-            key: "archive",
-            show: Boolean(productDeleteLink),
-            onClick: handleArchive,
-            mutation: deleteProductMutation,
-            variant: "destructive" as const,
-            pendingLabel: "Archiving",
-            successLabel: "Archived",
-            label: "Archive",
-            Icon: Archive,
-        },
-    ];
+    if (!productDeleteLink && !productRestoreLink) return null;
 
     return (
-        <>
-            {actionButtons
-                .filter((btn) => btn.show)
-                .map((btn) => (
-                    <Button
-                        key={btn.key}
-                        type="button"
-                        variant={btn.variant}
-                        disabled={btn.mutation.isPending || btn.mutation.isSuccess}
-                        onClick={btn.onClick}
-                    >
-                        <ButtonStatus
-                            status={
-                                btn.mutation.isPending
-                                    ? "pending"
-                                    : btn.mutation.isSuccess
-                                        ? "success"
-                                        : "idle"
-                            }
-                            pendingLabel={btn.pendingLabel}
-                            successLabel={btn.successLabel}
-                        >
-                            <btn.Icon className="mr-1 h-4 w-4" />
-                            {btn.label}
-                        </ButtonStatus>
-                    </Button>
-                ))}
-        </>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button type="button" variant="secondary">
+                    <Ellipsis />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuGroup>
+                    {productRestoreLink && (
+                        <DropdownMenuItem
+                            disabled={restoreProductMutation.isPending}
+                            onClick={handleOnRestore}>
+                            <RotateCcw />
+                            Restore
+                        </DropdownMenuItem>
+                    )}
+                    {productDeleteLink && (
+                        <DropdownMenuItem
+                            variant="destructive"
+                            disabled={deleteProductMutation.isPending}
+                            onClick={handleArchive}>
+                            <Archive />
+                            Archive
+                        </DropdownMenuItem>
+                    )}
+                </DropdownMenuGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

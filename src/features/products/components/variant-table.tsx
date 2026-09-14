@@ -115,7 +115,7 @@ export function VariantTable({ onAllVariantsDeleted, columns }: VariantTableProp
                   {variant.id ? (
                     <Link
                       to={`variants/${variant.id}`}
-                      className="text-primary hover:underline font-medium"
+                      className="hover:underline font-medium"
                     >
                       {variant.name}
                     </Link>
