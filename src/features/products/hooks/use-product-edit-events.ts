@@ -14,7 +14,7 @@ export function useProductEditEvents(messages?: ProductEditEventMessages) {
   const [title, setTitle] = useState<string | undefined>();
 
   const toast = useCallback(
-    (type: "success" | "error", message: string, description?: string) => {
+    (type: "success" | "error" | "warning", message: string, description?: string) => {
       platform?.events.emit("shell:toast:v1", {
         type,
         message,
@@ -33,6 +33,12 @@ export function useProductEditEvents(messages?: ProductEditEventMessages) {
           break;
         case "updated":
           toast("success", messages?.updated ?? "Product updated");
+          break;
+        case "updateMediaFailed":
+          toast(
+            "warning",
+            "Product updated, but images could not be saved.",
+          );
           break;
         case "updateFailed":
           toast("error", messages?.updateFailed ?? "Failed to update product");

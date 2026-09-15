@@ -46,6 +46,7 @@ export default function NewProductPage({ }: ProductCreatePageProps) {
             <ProductNewForm
               link={createSellableProductLink}
               onLifecycleEvent={handleEvent}
+              onCreated={(productId) => navigate(`../${productId}`)}
             />
         </SlotProvider>
       )}

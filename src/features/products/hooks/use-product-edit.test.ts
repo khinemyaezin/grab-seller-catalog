@@ -130,4 +130,31 @@ describe("transformProductToFormValue", () => {
 
     expect(formValue.product.category).toBeNull();
   });
+
+  it("maps gallery storageKey onto form medias", () => {
+    const formValue = transformProductToFormValue(
+      makeProduct({
+        medias: [
+          {
+            id: "media-1",
+            storageKey: "merchants/m/products/prod-1/hero.jpg",
+            url: "https://cdn/hero.jpg",
+            contentType: "image/jpeg",
+            rank: 0,
+          },
+        ],
+      }),
+    );
+
+    expect(formValue.medias).toEqual([
+      {
+        id: "media-1",
+        url: "https://cdn/hero.jpg",
+        contentType: "image/jpeg",
+        rank: 0,
+        storageKey: "merchants/m/products/prod-1/hero.jpg",
+        status: "done",
+      },
+    ]);
+  });
 });

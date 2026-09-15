@@ -8,12 +8,14 @@ import { Card, CardContent } from "@khinemyaezin/seller-ui/components/card";
 import { PricingStandalone } from "./pricing-standalone";
 import { InventoryStandalone } from "./inventory-standalone";
 import ProductBasicFieldSet from "./product-basic-fieldset";
+import ProductMediaFieldSet from "./product-media-fieldset";
 import ProductNewVariation from "./product-new-variation";
 import { useMatrixSync } from "../hooks/use-matrix-sync";
 
 export type ProductNewFormProps = {
   link: HateoasLink;
   onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
+  onCreated?: (productId: string) => void;
 };
 
 const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
@@ -27,6 +29,7 @@ const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
     },
   },
   variationTypes: [],
+  medias: [],
 };
 
 export default function ProductNewForm(props: ProductNewFormProps) {
@@ -42,24 +45,23 @@ export default function ProductNewForm(props: ProductNewFormProps) {
   );
 }
 
-function ProductNewFormContent({ link, onLifecycleEvent }: ProductNewFormProps) {
-  const { handleSubmit, reset, formState: { isDirty } } = useFormContext<ProductFormValue>();
+function ProductNewFormContent({ link, onLifecycleEvent, onCreated }: ProductNewFormProps) {
+  const { handleSubmit, formState: { isDirty } } = useFormContext<ProductFormValue>();
   const [isExtensionDirty, resetExtensionDirty] = useIsExtensionDirty();
   const resetAllSlots = useResetAllSlots();
 
   const { submit } = useProductCreateSubmit({
     link,
     onLifecycleEvent: (event) => {
-      if (event.type === "created") {
+      if (event.type === "created" || event.type === "createMediaFailed") {
         resetExtensionDirty();
+        resetAllSlots();
       }
       onLifecycleEvent?.(event);
     },
-    onSuccess: () => {
-      resetAllSlots();
-      reset(DEFAULT_PRODUCT_FORM_VALUE);
-      resetExtensionDirty();
-    }
+    onSuccess: (productId) => {
+      onCreated?.(productId);
+    },
   });
 
   useMatrixSync();
@@ -92,8 +94,9 @@ function ProductNewFormContent({ link, onLifecycleEvent }: ProductNewFormProps) 
     <form onSubmit={handleSubmit(submit)}>
       <div className="flex flex-col gap-6">
         <Card className="flex-1 w-full">
-          <CardContent>
+          <CardContent className="flex flex-col gap-6">
             <ProductBasicFieldSet />
+            <ProductMediaFieldSet />
           </CardContent>
         </Card>
         <PricingStandalone />

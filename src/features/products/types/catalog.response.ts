@@ -5,6 +5,9 @@ export interface CatalogRoot {
   self?: HateoasLink;
   searchProducts?: HateoasLink
   createProduct?: HateoasLink
+  createProductMediaUpload?: HateoasLink
+  createStagedMediaUpload?: HateoasLink
+  replaceProductMedia?: HateoasLink
   getProduct?: HateoasLink
   getVariant?: HateoasLink
   searchCategoryLeaves?: HateoasLink
@@ -75,6 +78,44 @@ export interface GetVariantResponse {
   _links?: Record<string, HateoasLink>;
 }
 
+export type ProductMedia = {
+  id: string;
+  storageKey: string;
+  url: string;
+  contentType: string;
+  rank: number;
+};
+
+export type ProductMediaUploadResponse = {
+  url: string;
+  method: string;
+  requiredHeaders?: Record<string, string>;
+  storageKey: string;
+  expiresAt?: string;
+  _links?: Record<string, HateoasLink>;
+};
+
+export type ReplaceProductMediaRequest = {
+  medias: {
+    id?: string;
+    storageKey: string;
+    contentType?: string;
+    rank?: number;
+  }[];
+};
+
+export type ReplaceProductMediaResponse = {
+  productId: string;
+  medias: ProductMedia[];
+  _links?: Record<string, HateoasLink>;
+};
+
+export type CreateProductMediaUploadRequest = {
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+};
+
 export interface GetFullProductResponse {
   id: string;
   name: string;
@@ -91,7 +132,7 @@ export interface GetFullProductResponse {
   slug: string;
   featured: boolean;
   descriptions: null;
-  medias: null;
+  medias: ProductMedia[] | null;
   moderationNote: null;
   variants: {
     id: string;
