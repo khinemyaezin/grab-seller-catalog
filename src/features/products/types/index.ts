@@ -45,6 +45,11 @@ export type {
   ProductResponse,
   ProductSearchResponse,
   GetFullProductResponse,
+  ProductMedia,
+  ProductMediaUploadResponse,
+  CreateProductMediaUploadRequest,
+  ReplaceProductMediaRequest,
+  ReplaceProductMediaResponse,
   GetVariantResponse,
   VariationMatrixResponse,
   VariationMatrixResponseVariation,
@@ -63,6 +68,7 @@ export type {
 // Form Values
 export type {
   ProductFormValue,
+  ProductMediaFormItem,
   ProductFilterFormValue,
   ProductVariantForm,
 } from "./catalog.form";

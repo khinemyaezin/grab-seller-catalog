@@ -60,10 +60,12 @@ export type CategoryLeaf = {
 export type ProductLifecycleEvent =
   | { type: "titleResolved"; title: string }
   | { type: "created" }
+  | { type: "createMediaFailed" }
   | { type: "createFailed" }
   | { type: "createTimedOut" }
   | { type: "validationFailed"; name?: string; errors?: SlotValidationErrors }
   | { type: "updated" }
+  | { type: "updateMediaFailed" }
   | { type: "updateFailed" }
   | { type: "updateTimedOut" }
   | { type: "archived"; name?: string }

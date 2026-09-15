@@ -1,5 +1,6 @@
 import type {
   CategoryLeavesResult,
+  CreateProductMediaUploadRequest,
   CreateProductRequest,
   CreateSellableProductRequest,
   CreateSellableProductResponse,
@@ -16,9 +17,12 @@ import type {
   VariationMatrixRequest,
   VariationMatrixResponse,
   DeleteProductResponse,
+  ProductMediaUploadResponse,
   ProductModerationResponse,
   ProductSearchRequest,
   ProductSearchResponse,
+  ReplaceProductMediaRequest,
+  ReplaceProductMediaResponse,
 } from "@/features/products/types";
 import { api } from "@khinemyaezin/seller-api";
 import type { HateoasLink } from "@khinemyaezin/seller-api";
@@ -62,6 +66,23 @@ export const catalogService = {
 
   publishProduct: (link: HateoasLink, headers?: Record<string, string>) =>
     api.followLink<ProductModerationResponse>(link, "POST", undefined, undefined, headers),
+
+  getCreateSellableProduct: (link: HateoasLink, headers?: Record<string, string>) =>
+    api.followLink<CreateSellableProductResponse>(link, "GET", undefined, undefined, headers),
+
+  createProductMediaUpload: (
+    link: HateoasLink,
+    request: CreateProductMediaUploadRequest,
+    headers?: Record<string, string>,
+  ) =>
+    api.followLink<ProductMediaUploadResponse>(link, "POST", request, undefined, headers),
+
+  replaceProductMedia: (
+    link: HateoasLink,
+    request: ReplaceProductMediaRequest,
+    headers?: Record<string, string>,
+  ) =>
+    api.followLink<ReplaceProductMediaResponse>(link, "PUT", request, undefined, headers),
 
   createSellableProduct: (
     link: HateoasLink,

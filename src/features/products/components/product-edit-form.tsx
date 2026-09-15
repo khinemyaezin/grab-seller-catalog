@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Card, CardContent } from "@khinemyaezin/seller-ui/components/card";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import ProductBasicFieldSet from "./product-basic-fieldset";
+import ProductMediaFieldSet from "./product-media-fieldset";
 import { useProductUpdateSubmit } from "@/features/products/hooks/use-product-update-submit";
 import { ProductFormValue, ProductLifecycleEvent } from "../types";
 import { ProductStatus } from "./product-status";
@@ -65,8 +66,10 @@ function ProductEditFormFields({
 
     const { submit } = useProductUpdateSubmit({
         productId,
+        seed,
+        actions,
         onLifecycleEvent: (event) => {
-            if (event.type === "updated") {
+            if (event.type === "updated" || event.type === "updateMediaFailed") {
                 resetExtensionDirty();
             }
             onLifecycleEvent?.(event);
@@ -108,8 +111,9 @@ function ProductEditFormFields({
         <div className="flex flex-col md:flex-row gap-6 items-start">
             <form onSubmit={handleSubmit(submit)} className="w-full grid gap-6">
                 <Card>
-                    <CardContent>
+                    <CardContent className="flex flex-col gap-6">
                         <ProductBasicFieldSet />
+                        <ProductMediaFieldSet />
                     </CardContent>
                 </Card>
                 <PricingEditStandalone />

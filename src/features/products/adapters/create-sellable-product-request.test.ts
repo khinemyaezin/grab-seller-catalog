@@ -14,6 +14,15 @@ function untrackedStandalone(): ProductFormValue {
       },
     },
     variationTypes: [],
+    medias: [
+      {
+        id: "local-1",
+        url: "blob:hero",
+        contentType: "image/jpeg",
+        rank: 0,
+        storageKey: "should-not-appear",
+      },
+    ],
   };
 }
 
@@ -30,5 +39,14 @@ describe("create sellable product inventory tracking", () => {
       },
     ]);
     expect(request.inventoryLines).toEqual([]);
+    expect(request).not.toHaveProperty("medias");
+  });
+
+  it("does not copy form medias onto the workflow request", () => {
+    const request = buildCreateSellableProductRequest(untrackedStandalone());
+
+    expect(JSON.stringify(request)).not.toContain("blob:hero");
+    expect(JSON.stringify(request)).not.toContain("should-not-appear");
+    expect(request).not.toHaveProperty("medias");
   });
 });

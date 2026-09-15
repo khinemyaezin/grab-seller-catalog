@@ -186,3 +186,12 @@ export function useProductPublishMutation() {
     },
   });
 }
+
+export function useProductCreateWorkflowGet(link?: HateoasLink) {
+  return useQuery<CreateSellableProductResponse, Error>({
+    queryKey: [],
+    queryFn: async () => catalogService.getCreateSellableProduct(link!),
+    enabled: !!link,
+    staleTime: 5 * 60 * 1000,
+  })
+}

@@ -14,6 +14,7 @@ export const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
         }
     },
     variationTypes: [],
+    medias: [],
 };
 
 function getVariantName(v: { variations: { optionId: string }[] }, nameMap: Record<string, string>): string {
@@ -64,6 +65,14 @@ export function transformProductToFormValue(apiData: GetFullProductResponse): Pr
                 })),
                 { uuid: "", name: "" }
             ]
+        })),
+        medias: (apiData.medias ?? []).map((media) => ({
+            id: media.id,
+            url: media.url,
+            contentType: media.contentType,
+            rank: media.rank,
+            storageKey: media.storageKey,
+            status: "done" as const,
         })),
     };
 }
