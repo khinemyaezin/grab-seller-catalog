@@ -3,17 +3,17 @@ import { renderHook } from "@testing-library/react";
 import { useProductVariantUpdateSubmit } from "./use-product-variant-update-submit";
 
 const mockGetValues = vi.fn();
-const mockUseCatalogLink = vi.fn();
 const mockValidate = vi.fn();
-const mockMutateAsync = vi.fn();
-const mockResetMutation = vi.fn();
-const mockAwaitWorkflow = vi.fn();
+const mockExecute = vi.fn();
+const mockResetCommand = vi.fn();
 const mockInvalidateProductQueries = vi.fn();
 const mockQueryClient = {};
 const mockMergeContributions = vi.fn();
 const mockCollectSlotFieldErrors = vi.fn();
 const mockBuildUpdateProductVariantRequest = vi.fn();
-const mockUseWorkflowAwaiter = vi.fn();
+const mockLink: { current: { href: string } | undefined } = {
+  current: { href: "/update-product-variant" },
+};
 
 vi.mock("react-hook-form", () => ({
   useFormContext: () => ({ getValues: mockGetValues }),
@@ -37,10 +37,6 @@ vi.mock("@khinemyaezin/seller-contracts", () => ({
 }));
 
 vi.mock("@/features/products/api/use-products", () => ({
-  useUpdateProductVariantMutation: () => ({
-    mutateAsync: mockMutateAsync,
-    reset: mockResetMutation,
-  }),
   invalidateProductQueries: (...args: unknown[]) => mockInvalidateProductQueries(...args),
 }));
 
@@ -49,13 +45,17 @@ vi.mock("@/features/products/lib/update-product-variant-request", () => ({
     mockBuildUpdateProductVariantRequest(...args),
 }));
 
-vi.mock("@/features/products/use-workflow-awaiter", () => ({
-  useWorkflowAwaiter: (...args: unknown[]) => mockUseWorkflowAwaiter(...args),
-  WorkflowTimeoutError: class WorkflowTimeoutError extends Error {},
+vi.mock("./use-product-variant-update-command", () => ({
+  useUpdateProductVariantCommand: () => ({
+    execute: mockExecute,
+    reset: mockResetCommand,
+    isPending: false,
+    link: mockLink.current,
+  }),
 }));
 
-vi.mock("@/features/products/api/use-root", () => ({
-  useCatalogLink: (...args: unknown[]) => mockUseCatalogLink(...args),
+vi.mock("@/features/products/use-workflow-awaiter", () => ({
+  WorkflowTimeoutError: class WorkflowTimeoutError extends Error {},
 }));
 
 const variantValues = {
@@ -70,6 +70,7 @@ const variantValues = {
 describe("useProductVariantUpdateSubmit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLink.current = { href: "/update-product-variant" };
     mockGetValues.mockReturnValue(variantValues);
     mockCollectSlotFieldErrors.mockReturnValue({});
     mockMergeContributions.mockReturnValue({ pricingLines: [], inventoryLines: [] });
@@ -78,11 +79,12 @@ describe("useProductVariantUpdateSubmit", () => {
       variantId: "var-1",
       sku: "SKU-1",
     });
-    mockUseWorkflowAwaiter.mockReturnValue({ awaitWorkflow: mockAwaitWorkflow });
+    mockExecute.mockResolvedValue(undefined);
+    mockValidate.mockResolvedValue([{ valid: true, groupId: "g1", slotId: "s1" }]);
   });
 
   it("throws when the update link is missing", async () => {
-    mockUseCatalogLink.mockReturnValue(undefined);
+    mockLink.current = undefined;
     const onLifecycleEvent = vi.fn();
 
     const { result } = renderHook(() =>
@@ -93,17 +95,12 @@ describe("useProductVariantUpdateSubmit", () => {
       }),
     );
 
-    expect(mockUseCatalogLink).toHaveBeenCalledWith("updateProductVariant");
-    expect(mockUseWorkflowAwaiter).toHaveBeenCalledWith({
-      workflowName: "update-product-variant",
-    });
     await expect(result.current.submit()).rejects.toThrow("Missing update link");
     expect(mockValidate).not.toHaveBeenCalled();
     expect(onLifecycleEvent).not.toHaveBeenCalled();
   });
 
   it("emits validationFailed and throws when a slot is invalid", async () => {
-    mockUseCatalogLink.mockReturnValue({ href: "/update-product-variant" });
     mockValidate.mockResolvedValue([{ valid: false, groupId: "g1", slotId: "s1" }]);
     mockCollectSlotFieldErrors.mockReturnValue({ "g1::s1": { amount: "Required" } });
     const onLifecycleEvent = vi.fn();
@@ -121,13 +118,10 @@ describe("useProductVariantUpdateSubmit", () => {
       type: "validationFailed",
       errors: { "g1::s1": { amount: "Required" } },
     });
-    expect(mockAwaitWorkflow).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
   });
 
   it("posts, invalidates, and emits updated on success", async () => {
-    const updateLink = { href: "/api/v1/workflows/update-product-variant" };
-    mockUseCatalogLink.mockReturnValue(updateLink);
-    mockValidate.mockResolvedValue([{ valid: true, groupId: "g1", slotId: "s1" }]);
     const contributions = {
       pricingLines: [{ sku: "SKU-1", currencyCode: "USD", amount: 10 }],
       inventoryLines: [],
@@ -140,10 +134,6 @@ describe("useProductVariantUpdateSubmit", () => {
       price: { currencyCode: "USD", amount: 10 },
     };
     mockBuildUpdateProductVariantRequest.mockReturnValue(payload);
-    mockAwaitWorkflow.mockImplementation(async (trigger: (key: string) => Promise<unknown>) => {
-      await trigger("idem-1");
-    });
-    mockMutateAsync.mockResolvedValue({ workflowId: "wf-1", status: "COMPLETED" });
     const onLifecycleEvent = vi.fn();
 
     const { result } = renderHook(() =>
@@ -162,12 +152,9 @@ describe("useProductVariantUpdateSubmit", () => {
       variantValues,
       contributions,
     );
-    expect(mockMutateAsync).toHaveBeenCalledWith({
-      link: updateLink,
-      request: { ...payload, idempotencyKey: "idem-1" },
-    });
+    expect(mockExecute).toHaveBeenCalledWith(payload);
     expect(mockInvalidateProductQueries).toHaveBeenCalledWith(mockQueryClient, "prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
-    expect(mockResetMutation).toHaveBeenCalled();
+    expect(mockResetCommand).toHaveBeenCalled();
   });
 });

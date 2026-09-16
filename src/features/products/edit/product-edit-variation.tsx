@@ -2,6 +2,7 @@ import { VariantTable } from "@/features/products/ui/variant-table";
 import ProductVariationFieldSet from "@/features/products/ui/product-variation-fieldset";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, FieldGroup } from "@khinemyaezin/seller-ui/components/index";
 import ProductStandaloneVariantField from "@/features/products/ui/product-standalone-field";
+import { isStandaloneProductForm } from "@/features/products/lib/is-standalone-product-form";
 import { useFormContext, useWatch } from "react-hook-form";
 import { ProductFormValue } from "@/features/products/types";
 import { pricingEditGroupId } from "@/features/products/lib/pricing-instance-id";
@@ -12,7 +13,7 @@ export default function ProductEditVariation() {
     const isStandalone = useWatch({
         control,
         name: "variationTypes",
-        compute: (value) => value.length == 0
+        compute: (value) => isStandaloneProductForm(value),
     })
 
     const StandaloneVariantFieldGroup = (

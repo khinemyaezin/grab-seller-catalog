@@ -1,6 +1,7 @@
 import { STANDALONE_INVENTORY_GROUP_ID } from "@/features/products/lib/inventory-group-id";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@khinemyaezin/seller-ui/components/card";
 import { InventoryLineFullSlot } from "./inventory-full-slot";
+import { isStandaloneProductForm } from "@/features/products/lib/is-standalone-product-form";
 import { ProductFormValue } from "@/features/products/types";
 import { useFormContext, useWatch } from "react-hook-form";
 import { ManageInventoryField, tracksInventory } from "../../manage-inventory-field";
@@ -10,7 +11,7 @@ export function InventoryStandalone() {
     const isStandalone = useWatch({
         control,
         name: "variationTypes",
-        compute: (value) => value.length == 0
+        compute: (value) => isStandaloneProductForm(value),
     })
     const sku = useWatch({
         control,

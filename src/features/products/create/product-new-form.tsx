@@ -10,27 +10,12 @@ import { InventoryStandalone } from "@/features/products/ui/slots/inventory/inve
 import ProductBasicFieldSet from "@/features/products/ui/product-basic-fieldset";
 import ProductMediaFieldSet from "@/features/products/ui/product-media-fieldset";
 import ProductNewVariation from "./product-new-variation";
+import { DEFAULT_PRODUCT_FORM_VALUE } from "@/features/products/lib/product-form-defaults";
 import { useMatrixSync } from "@/features/products/use-matrix-sync";
 
 export type ProductNewFormProps = {
   link: HateoasLink;
   onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
-  onCreated?: (productId: string) => void;
-};
-
-const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
-  product: {
-    name: "",
-    category: null,
-    variants: [],
-    standaloneVariant: {
-      sku: "",
-      manageInventory: false,
-    },
-  },
-  variationTypes: [],
-  medias: [],
-  descriptions: [],
 };
 
 export default function ProductNewForm(props: ProductNewFormProps) {
@@ -46,8 +31,8 @@ export default function ProductNewForm(props: ProductNewFormProps) {
   );
 }
 
-function ProductNewFormContent({ link, onLifecycleEvent, onCreated }: ProductNewFormProps) {
-  const { handleSubmit, formState: { isDirty } } = useFormContext<ProductFormValue>();
+function ProductNewFormContent({ link, onLifecycleEvent }: ProductNewFormProps) {
+  const { handleSubmit, reset, formState: { isDirty } } = useFormContext<ProductFormValue>();
   const [isExtensionDirty, resetExtensionDirty] = useIsExtensionDirty();
   const resetAllSlots = useResetAllSlots();
 
@@ -59,9 +44,6 @@ function ProductNewFormContent({ link, onLifecycleEvent, onCreated }: ProductNew
         resetAllSlots();
       }
       onLifecycleEvent?.(event);
-    },
-    onSuccess: (productId) => {
-      onCreated?.(productId);
     },
   });
 
@@ -85,7 +67,9 @@ function ProductNewFormContent({ link, onLifecycleEvent, onCreated }: ProductNew
       }
     },
     onDiscard: () => {
-
+      reset(DEFAULT_PRODUCT_FORM_VALUE);
+      resetAllSlots();
+      resetExtensionDirty();
     },
     groupId: "product-new",
     label: "New Product",

@@ -1,24 +1,29 @@
 import { useCallback } from "react";
+import { useFormContext } from "react-hook-form";
 import { type HateoasLink } from "@khinemyaezin/seller-api";
-import { collectSlotFieldErrors, useValidateAllSlots } from "@khinemyaezin/seller-ui";
+import { PRODUCT_CONTRIBUTION_SLICES } from "@khinemyaezin/seller-contracts";
+import { collectSlotFieldErrors, mergeContributions, useValidateAllSlots } from "@khinemyaezin/seller-ui";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  invalidateProductQueries,
-} from "@/features/products/api/use-products";
+import { invalidateProductQueries } from "@/features/products/api/use-products";
+import { useCreateSellableProductCommand } from "./use-product-create-command";
+import { buildCreateSellableProductRequest } from "@/features/products/lib/create-sellable-product-request";
 import type {
+  ProductContributions,
+  ProductFormValue,
   ProductLifecycleEvent,
 } from "@/features/products/types";
-import {
-  WorkflowTimeoutError,
-} from "@/features/products/use-workflow-awaiter";
-import { useProductMediaSync } from "@/features/products/use-product-media-sync";
 import { useProductDescriptionSync } from "@/features/products/use-product-description-sync";
-import { useProductCreateWorkflow } from "./use-product-create-workflow";
+import { useProductMediaSync } from "@/features/products/use-product-media-sync";
+import { WorkflowTimeoutError } from "@/features/products/use-workflow-awaiter";
+
+const PRODUCT_SLICES = [
+  PRODUCT_CONTRIBUTION_SLICES.PRICING_LINES,
+  PRODUCT_CONTRIBUTION_SLICES.INVENTORY_LINES,
+] as const;
 
 export type UseProductCreateSubmitOptions = {
   link: HateoasLink;
   onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
-  onSuccess?: (productId: string) => void;
 };
 
 export type UseProductCreateSubmitResult = {
@@ -28,11 +33,11 @@ export type UseProductCreateSubmitResult = {
 export function useProductCreateSubmit({
   link,
   onLifecycleEvent,
-  onSuccess,
 }: UseProductCreateSubmitOptions): UseProductCreateSubmitResult {
   const queryClient = useQueryClient();
+  const { getValues } = useFormContext<ProductFormValue>();
   const { validate } = useValidateAllSlots();
-  const { submitWorkflow, reset: resetWorkflow } = useProductCreateWorkflow({ link, onLifecycleEvent });
+  const { execute, reset: resetCommand } = useCreateSellableProductCommand(link);
   const { stage, attach } = useProductMediaSync();
   const { attach: attachDescriptions } = useProductDescriptionSync();
 
@@ -49,12 +54,15 @@ export function useProductCreateSubmit({
       throw staged.error;
     }
 
+    const contributions = mergeContributions(results, PRODUCT_SLICES) as ProductContributions;
+    const payload = buildCreateSellableProductRequest(getValues(), contributions);
+
     let productId: string;
     try {
-      const workflowResult = await submitWorkflow();
-      productId = workflowResult.productId;
+      const commandResult = await execute(payload);
+      productId = commandResult.productId;
     } catch (error) {
-      resetWorkflow();
+      resetCommand();
       if (error instanceof WorkflowTimeoutError) {
         onLifecycleEvent?.({ type: "createTimedOut" });
       } else {
@@ -62,28 +70,29 @@ export function useProductCreateSubmit({
       }
       throw error;
     }
+
     const media = await attach(productId);
     const descriptions = await attachDescriptions(productId);
 
     if (media.status === "failed") {
-      onLifecycleEvent?.({ type: "createMediaFailed" });
+      onLifecycleEvent?.({ type: "createMediaFailed", productId });
     } else if (descriptions.status === "failed") {
-      onLifecycleEvent?.({ type: "createDescriptionFailed" });
+      onLifecycleEvent?.({ type: "createDescriptionFailed", productId });
     } else {
-      onLifecycleEvent?.({ type: "created" });
+      onLifecycleEvent?.({ type: "created", productId });
     }
     void invalidateProductQueries(queryClient, productId);
-    onSuccess?.(productId);
   }, [
     attach,
     attachDescriptions,
+    execute,
+    getValues,
     onLifecycleEvent,
-    onSuccess,
     queryClient,
-    resetWorkflow,
+    resetCommand,
     stage,
-    submitWorkflow,
     validate,
   ]);
+
   return { submit };
 }

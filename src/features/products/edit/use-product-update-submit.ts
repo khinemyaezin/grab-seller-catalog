@@ -1,17 +1,32 @@
 import { useCallback } from "react";
 import { useFormContext } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
-import { useIsExtensionDirty } from "@khinemyaezin/seller-ui";
+import { PRODUCT_CONTRIBUTION_SLICES } from "@khinemyaezin/seller-contracts";
+import {
+  collectSlotFieldErrors,
+  mergeContributions,
+  useIsExtensionDirty,
+  useValidateAllSlots,
+} from "@khinemyaezin/seller-ui";
 import type { HateoasLink } from "@khinemyaezin/seller-api";
 import { invalidateProductQueries } from "@/features/products/api/use-products";
+import { useUpdateSellableProductCommand } from "./use-product-update-command";
+import { isCatalogFormDirty } from "@/features/products/lib/product-form-dirty";
+import { determineUpdateIntent } from "@/features/products/lib/update-product-request";
+import { buildUpdateSellableProductRequest } from "@/features/products/lib/update-sellable-product-request";
 import type {
   ProductFormValue,
   ProductLifecycleEvent,
+  UpdateProductContributions,
 } from "@/features/products/types";
-import { isCatalogFormDirty } from "@/features/products/lib/product-form-dirty";
-import { useProductMediaSync } from "@/features/products/use-product-media-sync";
 import { useProductDescriptionSync } from "@/features/products/use-product-description-sync";
-import { useProductUpdateWorkflow } from "./use-product-update-workflow";
+import { useProductMediaSync } from "@/features/products/use-product-media-sync";
+import { WorkflowTimeoutError } from "@/features/products/use-workflow-awaiter";
+
+const PRODUCT_SLICES = [
+  PRODUCT_CONTRIBUTION_SLICES.PRICING_LINES,
+  PRODUCT_CONTRIBUTION_SLICES.INVENTORY_LINES,
+] as const;
 
 export type UseProductUpdateSubmitOptions = {
   productId: string;
@@ -31,23 +46,53 @@ export function useProductUpdateSubmit({
   onLifecycleEvent,
 }: UseProductUpdateSubmitOptions): UseProductUpdateSubmitResult {
   const queryClient = useQueryClient();
-  const { formState: { dirtyFields } } = useFormContext<ProductFormValue>();
+  const { getValues, formState: { dirtyFields } } = useFormContext<ProductFormValue>();
   const [extensionDirty] = useIsExtensionDirty();
+  const { validate } = useValidateAllSlots();
   const { stage, attach } = useProductMediaSync({ seed: seed.medias, actions });
   const { attach: attachDescriptions } = useProductDescriptionSync({
     seed: seed.descriptions,
     actions,
   });
-  const { submitWorkflow, reset: resetWorkflow } = useProductUpdateWorkflow({
-    productId,
-    onLifecycleEvent,
-  });
+  const { execute, reset: resetCommand } = useUpdateSellableProductCommand();
 
   const submit = useCallback(async () => {
     const catalogDirty = isCatalogFormDirty(dirtyFields, extensionDirty);
 
     if (catalogDirty) {
-      await submitWorkflow();
+      const results = await validate();
+      const errors = collectSlotFieldErrors(results);
+      if (results.some((result) => !result.valid)) {
+        onLifecycleEvent?.({ type: "validationFailed", errors });
+        throw new Error("Validation failed");
+      }
+
+      const values = getValues();
+      const intent = determineUpdateIntent({
+        hasVariationTypes: values.variationTypes.length > 0,
+      });
+      const contributions = mergeContributions(
+        results,
+        PRODUCT_SLICES,
+      ) as UpdateProductContributions;
+      const payload = buildUpdateSellableProductRequest(
+        productId,
+        values,
+        intent,
+        contributions,
+      );
+
+      try {
+        await execute(payload);
+      } catch (error) {
+        resetCommand();
+        if (error instanceof WorkflowTimeoutError) {
+          onLifecycleEvent?.({ type: "updateTimedOut" });
+        } else {
+          onLifecycleEvent?.({ type: "updateFailed" });
+        }
+        throw error;
+      }
     }
 
     const staged = await stage();
@@ -57,7 +102,7 @@ export function useProductUpdateSubmit({
         throw staged.error;
       }
       void invalidateProductQueries(queryClient, productId);
-      resetWorkflow();
+      resetCommand();
       return;
     }
 
@@ -78,7 +123,7 @@ export function useProductUpdateSubmit({
         throw media.error;
       }
       void invalidateProductQueries(queryClient, productId);
-      resetWorkflow();
+      resetCommand();
       return;
     }
 
@@ -88,24 +133,26 @@ export function useProductUpdateSubmit({
         throw descriptions.error;
       }
       void invalidateProductQueries(queryClient, productId);
-      resetWorkflow();
+      resetCommand();
       return;
     }
 
     void invalidateProductQueries(queryClient, productId);
     onLifecycleEvent?.({ type: "updated" });
-    resetWorkflow();
+    resetCommand();
   }, [
     attach,
     attachDescriptions,
     dirtyFields,
+    execute,
     extensionDirty,
+    getValues,
     onLifecycleEvent,
     productId,
     queryClient,
-    resetWorkflow,
+    resetCommand,
     stage,
-    submitWorkflow,
+    validate,
   ]);
 
   return {

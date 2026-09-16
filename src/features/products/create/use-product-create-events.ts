@@ -1,10 +1,12 @@
 import { useCallback } from "react";
+import { useNavigate } from "react-router";
 import { usePlatform } from "@khinemyaezin/seller-ui";
 import type { ProductLifecycleEvent } from "@/features/products/types";
 import { formatExtensionErrorsForToast } from "@/features/products/lib/error-formatter";
 
 export function useProductCreateEvents() {
   const platform = usePlatform();
+  const navigate = useNavigate();
 
   const toast = useCallback(
     (
@@ -27,18 +29,21 @@ export function useProductCreateEvents() {
       switch (event.type) {
         case "created":
           toast("success", "Product created");
+          navigate(`../${event.productId}`);
           break;
         case "createMediaFailed":
           toast(
             "warning",
             "Product created, but images could not be saved. Add them from the product page.",
           );
+          navigate(`../${event.productId}`);
           break;
         case "createDescriptionFailed":
           toast(
             "warning",
             "Product created, but the description could not be saved. Add it from the product page.",
           );
+          navigate(`../${event.productId}`);
           break;
         case "createFailed":
           toast("error", "Failed to create product. Check pricing and inventory.");
@@ -56,7 +61,7 @@ export function useProductCreateEvents() {
         }
       }
     },
-    [toast],
+    [navigate, toast],
   );
 
   return {

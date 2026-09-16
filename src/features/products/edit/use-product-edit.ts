@@ -1,23 +1,7 @@
 import { useMemo } from "react";
-import { ProductFormValue } from "@/features/products/types";
 import { transformProductToFormValue } from "@/features/products/lib/to-product-form-value";
 import { useProductGet } from "@/features/products/api/use-products";
 import { useCatalogLink } from "@/features/products/api/use-root";
-
-export const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
-    product: {
-        name: "",
-        category: null,
-        variants: [],
-        standaloneVariant: {
-            sku: "",
-            manageInventory: false,
-        }
-    },
-    variationTypes: [],
-    medias: [],
-    descriptions: [],
-};
 
 export type UseProductEditProps = {
     productId: string;

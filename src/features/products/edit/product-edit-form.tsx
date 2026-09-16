@@ -5,7 +5,6 @@ import ProductBasicFieldSet from "@/features/products/ui/product-basic-fieldset"
 import ProductMediaFieldSet from "@/features/products/ui/product-media-fieldset";
 import { useProductUpdateSubmit } from "./use-product-update-submit";
 import { ProductFormValue, ProductLifecycleEvent } from "@/features/products/types";
-import { ProductStatus } from "@/features/products/ui/product-status";
 import ProductEditVariation from "./product-edit-variation";
 import { PricingEditStandalone } from "@/features/products/ui/slots/pricing/pricing-edit-standalone";
 import { HateoasLink, resolveLink } from "@khinemyaezin/seller-api";

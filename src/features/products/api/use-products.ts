@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 import { catalogService } from ".";
 import type { HateoasLink } from "@khinemyaezin/seller-api";
 import type {
-  CreateProductRequest,
   CreateSellableProductRequest,
   CreateSellableProductResponse,
   GetFullProductResponse,
@@ -36,16 +35,6 @@ export function invalidateProductQueries(queryClient: QueryClient, productId?: s
     promises.push(invalidateProductDetailQueries(queryClient, productId));
   }
   return Promise.all(promises);
-}
-
-export function useProductMutation() {
-  const queryClient = useQueryClient();
-  return useMutation<void, Error, { link: HateoasLink; request: CreateProductRequest }>({
-    mutationFn: ({ link, request }) => catalogService.createProduct(link, request),
-    onSuccess: () => {
-      invalidateProductsQueries(queryClient);
-    },
-  });
 }
 
 export function useCreateSellableProductMutation() {
@@ -187,11 +176,3 @@ export function useProductPublishMutation() {
   });
 }
 
-export function useProductCreateWorkflowGet(link?: HateoasLink) {
-  return useQuery<CreateSellableProductResponse, Error>({
-    queryKey: [],
-    queryFn: async () => catalogService.getCreateSellableProduct(link!),
-    enabled: !!link,
-    staleTime: 5 * 60 * 1000,
-  })
-}

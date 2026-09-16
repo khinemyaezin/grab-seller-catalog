@@ -2,11 +2,13 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Header } from "@khinemyaezin/seller-ui/layout/header";
 import { SlotProvider, usePlatform } from "@khinemyaezin/seller-ui";
+import { QueryState } from "@khinemyaezin/seller-ui/components/query-state";
 import ProductNewForm from "./product-new-form";
-import { useCatalogLink } from "@/features/products/api/use-root";
+import { useRoot } from "@/features/products/api/use-root";
 import { useProductCreateEvents } from "./use-product-create-events";
 import { Button } from "@khinemyaezin/seller-ui/components/button";
 import { ButtonGroup } from "@khinemyaezin/seller-ui/components/button-group";
+import { Card, CardContent } from "@khinemyaezin/seller-ui/components/card";
 import { ArrowLeftIcon } from "lucide-react";
 
 export type ProductCreatePageProps = {};
@@ -14,7 +16,8 @@ export type ProductCreatePageProps = {};
 export default function NewProductPage({ }: ProductCreatePageProps) {
   const platform = usePlatform();
   const navigate = useNavigate();
-  const createSellableProductLink = useCatalogLink("createSellableProduct");
+  const { data, isLoading, isError } = useRoot();
+  const createSellableProductLink = data?.createSellableProduct;
   const { handleEvent } = useProductCreateEvents();
 
   useEffect(() => {
@@ -41,15 +44,28 @@ export default function NewProductPage({ }: ProductCreatePageProps) {
           </Button>
         </ButtonGroup>
       </Header>
-      {createSellableProductLink && (
-        <SlotProvider>
+      <QueryState
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage="Failed to load catalog."
+      >
+        {createSellableProductLink ? (
+          <SlotProvider>
             <ProductNewForm
               link={createSellableProductLink}
               onLifecycleEvent={handleEvent}
-              onCreated={(productId) => navigate(`../${productId}`)}
             />
-        </SlotProvider>
-      )}
+          </SlotProvider>
+        ) : (
+          <Card>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Product creation is not available.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </QueryState>
     </div>
   );
 }

@@ -6,16 +6,13 @@ import type { ProductFormValue } from "@/features/products/types";
 const mockGetValues = vi.fn();
 const mockDirtyFields: { current: Record<string, unknown> } = { current: {} };
 const mockValidate = vi.fn();
-const mockMutateAsync = vi.fn();
-const mockResetMutation = vi.fn();
-const mockAwaitWorkflow = vi.fn();
+const mockExecute = vi.fn();
+const mockResetCommand = vi.fn();
 const mockInvalidateProductQueries = vi.fn();
 const mockQueryClient = {};
 const mockMergeContributions = vi.fn();
 const mockCollectSlotFieldErrors = vi.fn();
 const mockBuildUpdateSellableProductRequest = vi.fn();
-const mockUseWorkflowAwaiter = vi.fn();
-const mockUseCatalogLink = vi.fn();
 const mockStage = vi.fn();
 const mockAttach = vi.fn();
 const mockAttachDescriptions = vi.fn();
@@ -48,10 +45,6 @@ vi.mock("@khinemyaezin/seller-contracts", () => ({
 }));
 
 vi.mock("@/features/products/api/use-products", () => ({
-  useUpdateSellableProductMutation: () => ({
-    mutateAsync: mockMutateAsync,
-    reset: mockResetMutation,
-  }),
   invalidateProductQueries: (...args: unknown[]) => mockInvalidateProductQueries(...args),
 }));
 
@@ -64,13 +57,16 @@ vi.mock("@/features/products/lib/update-product-request", () => ({
   determineUpdateIntent: () => "COLLAPSE_TO_STANDALONE",
 }));
 
-vi.mock("@/features/products/use-workflow-awaiter", () => ({
-  useWorkflowAwaiter: (...args: unknown[]) => mockUseWorkflowAwaiter(...args),
-  WorkflowTimeoutError: class WorkflowTimeoutError extends Error {},
+vi.mock("./use-product-update-command", () => ({
+  useUpdateSellableProductCommand: () => ({
+    execute: mockExecute,
+    reset: mockResetCommand,
+    isPending: false,
+  }),
 }));
 
-vi.mock("@/features/products/api/use-root", () => ({
-  useCatalogLink: (...args: unknown[]) => mockUseCatalogLink(...args),
+vi.mock("@/features/products/use-workflow-awaiter", () => ({
+  WorkflowTimeoutError: class WorkflowTimeoutError extends Error {},
 }));
 
 vi.mock("@/features/products/use-product-media-sync", () => ({
@@ -126,6 +122,11 @@ const values: ProductFormValue = {
   ],
 };
 
+const payload = {
+  productId: "prod-1",
+  product: { name: "Mug" },
+};
+
 describe("useProductUpdateSubmit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -133,26 +134,15 @@ describe("useProductUpdateSubmit", () => {
     mockGetValues.mockReturnValue(values);
     mockCollectSlotFieldErrors.mockReturnValue({});
     mockMergeContributions.mockReturnValue({ pricingLines: [], inventoryLines: [] });
-    mockBuildUpdateSellableProductRequest.mockReturnValue({
-      productId: "prod-1",
-      product: { name: "Mug" },
-    });
-    mockUseWorkflowAwaiter.mockReturnValue({ awaitWorkflow: mockAwaitWorkflow });
-    mockUseCatalogLink.mockImplementation((rel: string) => {
-      if (rel === "updateSellableProduct") return { href: "/workflows/update-sellable-product" };
-      return undefined;
-    });
-    mockAwaitWorkflow.mockImplementation(async (trigger: (key: string) => Promise<unknown>) => {
-      await trigger("idem-1");
-    });
-    mockMutateAsync.mockResolvedValue({ workflowId: "wf-1", status: "COMPLETED" });
+    mockBuildUpdateSellableProductRequest.mockReturnValue(payload);
+    mockExecute.mockResolvedValue({ productId: "prod-1" });
     mockValidate.mockResolvedValue([{ valid: true }]);
     mockStage.mockResolvedValue({ status: "synced" });
     mockAttach.mockResolvedValue({ status: "synced" });
     mockAttachDescriptions.mockResolvedValue({ status: "synced" });
   });
 
-  it("skips the saga when only the gallery is dirty", async () => {
+  it("skips the command when only the gallery is dirty", async () => {
     mockIsCatalogFormDirty.mockReturnValue(false);
     const onLifecycleEvent = vi.fn();
 
@@ -166,20 +156,21 @@ describe("useProductUpdateSubmit", () => {
 
     await result.current.submit();
 
-    expect(mockAwaitWorkflow).not.toHaveBeenCalled();
+    expect(mockValidate).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
     expect(mockStage).toHaveBeenCalled();
     expect(mockAttach).toHaveBeenCalledWith("prod-1");
     expect(mockAttachDescriptions).toHaveBeenCalledWith("prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
   });
 
-  it("runs the saga then media when both are dirty", async () => {
+  it("runs the command then media when both are dirty", async () => {
     mockIsCatalogFormDirty.mockReturnValue(true);
     const onLifecycleEvent = vi.fn();
     const order: string[] = [];
-    mockMutateAsync.mockImplementation(async () => {
-      order.push("saga");
-      return { workflowId: "wf-1", status: "COMPLETED" };
+    mockExecute.mockImplementation(async () => {
+      order.push("command");
+      return { productId: "prod-1" };
     });
     mockStage.mockImplementation(async () => {
       order.push("stage");
@@ -204,14 +195,36 @@ describe("useProductUpdateSubmit", () => {
 
     await result.current.submit();
 
-    expect(order).toEqual(["saga", "stage", "attach", "descriptions"]);
-    expect(mockMutateAsync.mock.calls[0][0].request).not.toHaveProperty("medias");
-    expect(mockMutateAsync.mock.calls[0][0].request).not.toHaveProperty("descriptions");
+    expect(order).toEqual(["command", "stage", "attach", "descriptions"]);
+    expect(mockExecute).toHaveBeenCalledWith(payload);
     expect(mockAttach).toHaveBeenCalledWith("prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
   });
 
-  it("does not throw when media fails after a successful saga", async () => {
+  it("does not execute the command when slot validation fails", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(true);
+    mockValidate.mockResolvedValue([{ valid: false, groupId: "g1", slotId: "s1" }]);
+    mockCollectSlotFieldErrors.mockReturnValue({ "g1::s1": ["Required"] });
+    const onLifecycleEvent = vi.fn();
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed,
+        onLifecycleEvent,
+      }),
+    );
+
+    await expect(result.current.submit()).rejects.toThrow("Validation failed");
+    expect(onLifecycleEvent).toHaveBeenCalledWith({
+      type: "validationFailed",
+      errors: { "g1::s1": ["Required"] },
+    });
+    expect(mockExecute).not.toHaveBeenCalled();
+    expect(mockStage).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when media fails after a successful command", async () => {
     mockIsCatalogFormDirty.mockReturnValue(true);
     mockStage.mockResolvedValue({ status: "failed", error: new Error("Storage upload failed") });
     const onLifecycleEvent = vi.fn();
@@ -248,7 +261,7 @@ describe("useProductUpdateSubmit", () => {
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
   });
 
-  it("skips the saga when only descriptions are dirty", async () => {
+  it("skips the command when only descriptions are dirty", async () => {
     mockIsCatalogFormDirty.mockReturnValue(false);
     mockStage.mockResolvedValue({ status: "skipped" });
     mockAttach.mockResolvedValue({ status: "skipped" });
@@ -265,7 +278,7 @@ describe("useProductUpdateSubmit", () => {
 
     await result.current.submit();
 
-    expect(mockAwaitWorkflow).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
     expect(mockAttachDescriptions).toHaveBeenCalledWith("prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
   });
@@ -291,5 +304,24 @@ describe("useProductUpdateSubmit", () => {
     await expect(result.current.submit()).rejects.toThrow("Description replace failed");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateDescriptionFailed" });
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
+  });
+
+  it("emits updateTimedOut when the command times out", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(true);
+    const { WorkflowTimeoutError } = await import("@/features/products/use-workflow-awaiter");
+    mockExecute.mockRejectedValue(new WorkflowTimeoutError("Timeout"));
+    const onLifecycleEvent = vi.fn();
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed,
+        onLifecycleEvent,
+      }),
+    );
+
+    await expect(result.current.submit()).rejects.toThrow(WorkflowTimeoutError);
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateTimedOut" });
+    expect(mockResetCommand).toHaveBeenCalled();
   });
 });

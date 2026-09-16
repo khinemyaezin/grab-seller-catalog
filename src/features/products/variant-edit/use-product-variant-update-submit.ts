@@ -7,22 +7,15 @@ import {
   useValidateAllSlots,
 } from "@khinemyaezin/seller-ui";
 import { PRODUCT_CONTRIBUTION_SLICES } from "@khinemyaezin/seller-contracts";
-import {
-  useUpdateProductVariantMutation,
-  invalidateProductQueries,
-} from "@/features/products/api/use-products";
+import { invalidateProductQueries } from "@/features/products/api/use-products";
 import { buildUpdateProductVariantRequest } from "@/features/products/lib/update-product-variant-request";
 import type {
   ProductLifecycleEvent,
   ProductVariantForm,
   UpdateProductContributions,
 } from "@/features/products/types";
-import { UPDATE_PRODUCT_VARIANT_WORKFLOW } from "@/features/products/lib/create-sellable-product-workflow";
-import {
-  useWorkflowAwaiter,
-  WorkflowTimeoutError,
-} from "@/features/products/use-workflow-awaiter";
-import { useCatalogLink } from "@/features/products/api/use-root";
+import { WorkflowTimeoutError } from "@/features/products/use-workflow-awaiter";
+import { useUpdateProductVariantCommand } from "./use-product-variant-update-command";
 
 const PRODUCT_SLICES = [
   PRODUCT_CONTRIBUTION_SLICES.PRICING_LINES,
@@ -46,18 +39,11 @@ export function useProductVariantUpdateSubmit({
 }: UseProductVariantUpdateSubmitOptions): UseProductVariantUpdateSubmitResult {
   const queryClient = useQueryClient();
   const { getValues } = useFormContext<ProductVariantForm>();
-  const variantUpdateLink = useCatalogLink("updateProductVariant");
-
   const { validate } = useValidateAllSlots();
-  const mutation = useUpdateProductVariantMutation();
-  const { mutateAsync, reset: resetMutation } = mutation;
-
-  const { awaitWorkflow } = useWorkflowAwaiter({
-    workflowName: UPDATE_PRODUCT_VARIANT_WORKFLOW,
-  });
+  const { execute, reset: resetCommand, link } = useUpdateProductVariantCommand();
 
   const submit = useCallback(async () => {
-    if (!variantUpdateLink) {
+    if (!link) {
       throw new Error("Missing update link");
     }
 
@@ -78,18 +64,12 @@ export function useProductVariantUpdateSubmit({
     );
 
     try {
-      await awaitWorkflow((idempotencyKey) =>
-        mutateAsync({
-          link: variantUpdateLink,
-          request: { ...payload, idempotencyKey },
-        }),
-      );
-
+      await execute(payload);
       void invalidateProductQueries(queryClient, productId);
       onLifecycleEvent?.({ type: "updated" });
-      resetMutation();
+      resetCommand();
     } catch (error) {
-      resetMutation();
+      resetCommand();
       if (error instanceof WorkflowTimeoutError) {
         onLifecycleEvent?.({ type: "updateTimedOut" });
       } else {
@@ -98,16 +78,15 @@ export function useProductVariantUpdateSubmit({
       throw error;
     }
   }, [
-    awaitWorkflow,
+    execute,
     getValues,
-    mutateAsync,
+    link,
     onLifecycleEvent,
     productId,
     queryClient,
-    resetMutation,
+    resetCommand,
     validate,
     variantId,
-    variantUpdateLink,
   ]);
 
   return {

@@ -59,9 +59,9 @@ export type CategoryLeaf = {
 
 export type ProductLifecycleEvent =
   | { type: "titleResolved"; title: string }
-  | { type: "created" }
-  | { type: "createMediaFailed" }
-  | { type: "createDescriptionFailed" }
+  | { type: "created"; productId: string }
+  | { type: "createMediaFailed"; productId: string }
+  | { type: "createDescriptionFailed"; productId: string }
   | { type: "createFailed" }
   | { type: "createTimedOut" }
   | { type: "validationFailed"; name?: string; errors?: SlotValidationErrors }
