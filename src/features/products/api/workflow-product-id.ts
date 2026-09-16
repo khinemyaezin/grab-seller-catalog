@@ -1,13 +1,16 @@
 import { resolveLink } from "@khinemyaezin/seller-api";
-import { catalogService } from "@/features/products/api/catalog";
+import { catalogService } from "./catalog";
 import type { CreateSellableProductResponse } from "@/features/products/types";
-import type { AwaitWorkflowResult } from "@/features/products/hooks/use-workflow-awaiter";
+import type { AwaitWorkflowResult } from "@/features/products/use-workflow-awaiter";
 
 export async function resolveWorkflowProductId(
   result: AwaitWorkflowResult<CreateSellableProductResponse>,
 ): Promise<string> {
-  const getLink = resolveLink(result.response?._links, "self");
+  if (result.response?.productId) {
+    return result.response.productId;
+  }
 
+  const getLink = resolveLink(result.response?._links, "get-create-sellable-product");
   if (!getLink) {
     throw new Error("Missing product id after create");
   }

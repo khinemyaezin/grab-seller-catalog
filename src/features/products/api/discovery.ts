@@ -1,5 +1,5 @@
 import { api, resolveLink, type HalLinks, type HateoasLink } from "@khinemyaezin/seller-api";
-import type { CatalogRoot } from "../types";
+import type { CatalogRoot } from "@/features/products/types";
 
 type RootResponse = { _links: HalLinks };
 

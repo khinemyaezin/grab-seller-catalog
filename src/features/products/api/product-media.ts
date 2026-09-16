@@ -9,8 +9,8 @@ import {
   isMediaGalleryDirty,
   type MediaGalleryItemStatus,
 } from "@khinemyaezin/seller-ui/components/media-gallery";
-import { catalogService } from "@/features/products/api/catalog";
-import { putPresignedObject } from "@/features/products/api/storage";
+import { catalogService } from "./catalog";
+import { putPresignedObject } from "./storage";
 import type {
   CreateProductMediaUploadRequest,
   ProductMediaFormItem,
