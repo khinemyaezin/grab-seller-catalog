@@ -1,7 +1,11 @@
 
-import { Input } from "@khinemyaezin/seller-ui/components/index";
+import { Input, Textarea } from "@khinemyaezin/seller-ui/components/index";
 import { FieldGroup, Field, FieldLabel, FieldError, FieldSet, FieldLegend, FieldDescription } from "@khinemyaezin/seller-ui/components/field";
 import { useFormContext, Controller } from "react-hook-form";
+import {
+    overviewDescription,
+    withOverviewDescription,
+} from "@/features/products/api/product-descriptions";
 import CategorySearch from "./category-search";
 import { ProductFormValue } from "../types";
 
@@ -59,6 +63,32 @@ export default function ProductBasicFieldSet() {
                         )}
                     />
                     </div>
+                    <Controller
+                        control={control}
+                        name="descriptions"
+                        render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor="prod-info-description">Description</FieldLabel>
+                                <Textarea
+                                    id="prod-info-description"
+                                    placeholder="Describe the product for customers."
+                                    aria-invalid={fieldState.invalid}
+                                    value={overviewDescription(field.value)}
+                                    onChange={(event) =>
+                                        field.onChange(
+                                            withOverviewDescription(field.value, event.target.value),
+                                        )
+                                    }
+                                    onBlur={field.onBlur}
+                                    name={field.name}
+                                    ref={field.ref}
+                                />
+                                {fieldState.invalid && (
+                                    <FieldError errors={[fieldState.error]} />
+                                )}
+                            </Field>
+                        )}
+                    />
             </FieldGroup>
         </FieldSet>
     );

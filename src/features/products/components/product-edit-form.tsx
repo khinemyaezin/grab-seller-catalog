@@ -69,7 +69,7 @@ function ProductEditFormFields({
         seed,
         actions,
         onLifecycleEvent: (event) => {
-            if (event.type === "updated" || event.type === "updateMediaFailed") {
+            if (event.type === "updated" || event.type === "updateMediaFailed" || event.type === "updateDescriptionFailed") {
                 resetExtensionDirty();
             }
             onLifecycleEvent?.(event);

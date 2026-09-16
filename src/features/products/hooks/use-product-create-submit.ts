@@ -12,6 +12,7 @@ import {
   WorkflowTimeoutError,
 } from "@/features/products/hooks/use-workflow-awaiter";
 import { useProductMediaSync } from "@/features/products/hooks/use-product-media-sync";
+import { useProductDescriptionSync } from "@/features/products/hooks/use-product-description-sync";
 import { useProductCreateWorkflow } from "./use-product-create-workflow";
 
 export type UseProductCreateSubmitOptions = {
@@ -33,6 +34,7 @@ export function useProductCreateSubmit({
   const { validate } = useValidateAllSlots();
   const { submitWorkflow, reset: resetWorkflow } = useProductCreateWorkflow({ link, onLifecycleEvent });
   const { stage, attach } = useProductMediaSync();
+  const { attach: attachDescriptions } = useProductDescriptionSync();
 
   const submit = useCallback(async () => {
     const results = await validate();
@@ -61,9 +63,12 @@ export function useProductCreateSubmit({
       throw error;
     }
     const media = await attach(productId);
+    const descriptions = await attachDescriptions(productId);
 
     if (media.status === "failed") {
       onLifecycleEvent?.({ type: "createMediaFailed" });
+    } else if (descriptions.status === "failed") {
+      onLifecycleEvent?.({ type: "createDescriptionFailed" });
     } else {
       onLifecycleEvent?.({ type: "created" });
     }
@@ -71,6 +76,7 @@ export function useProductCreateSubmit({
     onSuccess?.(productId);
   }, [
     attach,
+    attachDescriptions,
     onLifecycleEvent,
     onSuccess,
     queryClient,

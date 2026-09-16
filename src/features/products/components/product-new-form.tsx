@@ -30,6 +30,7 @@ const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
   },
   variationTypes: [],
   medias: [],
+  descriptions: [],
 };
 
 export default function ProductNewForm(props: ProductNewFormProps) {
@@ -53,7 +54,7 @@ function ProductNewFormContent({ link, onLifecycleEvent, onCreated }: ProductNew
   const { submit } = useProductCreateSubmit({
     link,
     onLifecycleEvent: (event) => {
-      if (event.type === "created" || event.type === "createMediaFailed") {
+      if (event.type === "created" || event.type === "createMediaFailed" || event.type === "createDescriptionFailed") {
         resetExtensionDirty();
         resetAllSlots();
       }

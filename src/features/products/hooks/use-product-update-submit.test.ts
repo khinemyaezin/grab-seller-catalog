@@ -209,4 +209,22 @@ describe("useProductUpdateSubmit", () => {
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateMediaFailed" });
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
   });
+
+  it("throws when media fails and catalog is clean", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(false);
+    mockStage.mockResolvedValue({ status: "failed", error: new Error("Storage upload failed") });
+    const onLifecycleEvent = vi.fn();
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed,
+        onLifecycleEvent,
+      }),
+    );
+
+    await expect(result.current.submit()).rejects.toThrow("Storage upload failed");
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateMediaFailed" });
+    expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
+  });
 });

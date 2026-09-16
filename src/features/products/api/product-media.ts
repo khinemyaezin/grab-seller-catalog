@@ -1,4 +1,14 @@
-import { resolveUrlTemplate, type HateoasLink } from "@khinemyaezin/seller-api";
+import {
+  DEFAULT_MEDIA_UPLOAD_ATTEMPTS,
+  resolveUrlTemplate,
+  stageMediaDrafts,
+  type HateoasLink,
+} from "@khinemyaezin/seller-api";
+import {
+  formatMediaReplacements,
+  isMediaGalleryDirty,
+  type MediaGalleryItemStatus,
+} from "@khinemyaezin/seller-ui/components/media-gallery";
 import { catalogService } from "@/features/products/api/catalog";
 import { putPresignedObject } from "@/features/products/api/storage";
 import type {
@@ -7,9 +17,8 @@ import type {
   ProductMediaUploadResponse,
   ReplaceProductMediaRequest,
 } from "@/features/products/types";
-import type { MediaGalleryItemStatus } from "@khinemyaezin/seller-ui/components/media-gallery";
 
-export const PRODUCT_MEDIA_UPLOAD_ATTEMPTS = 3;
+export const PRODUCT_MEDIA_UPLOAD_ATTEMPTS = DEFAULT_MEDIA_UPLOAD_ATTEMPTS;
 
 export type ProductMediaItemStatusHandler = (
   id: string,
@@ -31,29 +40,7 @@ export type AttachProductMediaOptions = {
   replaceMediaLink: HateoasLink;
 };
 
-function sortedByRank(items: ProductMediaFormItem[]): ProductMediaFormItem[] {
-  return [...items].sort((left, right) => left.rank - right.rank);
-}
-
-export function isGalleryDirty(
-  items: ProductMediaFormItem[],
-  seed: ProductMediaFormItem[] = [],
-): boolean {
-  if (items.some((item) => item.file)) return true;
-  if (items.length !== seed.length) return true;
-  return items.some((item, index) => {
-    const previous = seed[index];
-    return (
-      item.id !== previous?.id ||
-      item.rank !== previous?.rank ||
-      item.storageKey !== previous?.storageKey
-    );
-  });
-}
-
-function uploadErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Storage upload failed";
-}
+export { isMediaGalleryDirty as isGalleryDirty };
 
 export function authorizeStagedUpload(
   link: HateoasLink,
@@ -62,57 +49,8 @@ export function authorizeStagedUpload(
   return catalogService.createProductMediaUpload(link, metadata);
 }
 
-async function uploadDraft(
-  item: ProductMediaFormItem,
-  createUploadLink: HateoasLink,
-  onItemStatus?: ProductMediaItemStatusHandler,
-): Promise<string> {
-  const file = item.file;
-  if (!file) {
-    throw new Error("Missing file for media upload");
-  }
-
-  onItemStatus?.(item.id, "uploading");
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt < PRODUCT_MEDIA_UPLOAD_ATTEMPTS; attempt++) {
-    try {
-      const upload = await authorizeStagedUpload(createUploadLink, {
-        filename: item.name ?? file.name,
-        contentType: item.contentType,
-        sizeBytes: item.sizeBytes ?? file.size,
-      });
-      await putPresignedObject(
-        upload.url,
-        file,
-        upload.requiredHeaders ?? {},
-        upload.method,
-      );
-      onItemStatus?.(item.id, "done");
-      return upload.storageKey;
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  const message = uploadErrorMessage(lastError);
-  onItemStatus?.(item.id, "error", message);
-  throw lastError instanceof Error ? lastError : new Error(message);
-}
-
 function replacePayload(items: ProductMediaFormItem[]): ReplaceProductMediaRequest["medias"] {
-  return sortedByRank(items).map((item) => {
-    if (!item.storageKey) {
-      throw new Error("Missing storage key for product media");
-    }
-
-    return {
-      ...(item.file ? {} : { id: item.id }),
-      storageKey: item.storageKey,
-      contentType: item.contentType,
-      rank: item.rank,
-    };
-  });
+  return formatMediaReplacements(items);
 }
 
 export async function stageProductMedia({
@@ -121,16 +59,14 @@ export async function stageProductMedia({
   onItemStatus,
   onStaged,
 }: StageProductMediaOptions): Promise<Map<string, string>> {
-  const uploadedKeys = new Map<string, string>();
-  const drafts = sortedByRank(items).filter((item) => item.file && !item.storageKey);
-
-  for (const item of drafts) {
-    const storageKey = await uploadDraft(item, createUploadLink, onItemStatus);
-    uploadedKeys.set(item.id, storageKey);
-    onStaged?.(item.id, storageKey);
-  }
-
-  return uploadedKeys;
+  return stageMediaDrafts({
+    items,
+    authorizer: (metadata) => authorizeStagedUpload(createUploadLink, metadata),
+    uploader: putPresignedObject,
+    maxAttempts: PRODUCT_MEDIA_UPLOAD_ATTEMPTS,
+    onItemStatus,
+    onStaged,
+  });
 }
 
 export async function attachProductMedia({
@@ -139,7 +75,7 @@ export async function attachProductMedia({
   seed = [],
   replaceMediaLink,
 }: AttachProductMediaOptions): Promise<void> {
-  if (!isGalleryDirty(items, seed)) return;
+  if (!isMediaGalleryDirty(items, seed)) return;
 
   await catalogService.replaceProductMedia(
     resolveUrlTemplate({ productId }, replaceMediaLink),

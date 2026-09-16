@@ -34,6 +34,12 @@ export function useProductCreateEvents() {
             "Product created, but images could not be saved. Add them from the product page.",
           );
           break;
+        case "createDescriptionFailed":
+          toast(
+            "warning",
+            "Product created, but the description could not be saved. Add it from the product page.",
+          );
+          break;
         case "createFailed":
           toast("error", "Failed to create product. Check pricing and inventory.");
           break;

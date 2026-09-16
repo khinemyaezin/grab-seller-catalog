@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { transformProductToFormValue } from "./use-product-edit";
+import {
+  toProductMediaFormItems,
+  transformProductToFormValue,
+} from "./to-product-form-value";
 import type { GetFullProductResponse } from "../types";
 
 function makeProduct(
@@ -131,7 +134,7 @@ describe("transformProductToFormValue", () => {
     expect(formValue.product.category).toBeNull();
   });
 
-  it("maps gallery storageKey onto form medias", () => {
+  it("maps gallery storageKey onto remote form medias without a file", () => {
     const formValue = transformProductToFormValue(
       makeProduct({
         medias: [
@@ -153,8 +156,15 @@ describe("transformProductToFormValue", () => {
         contentType: "image/jpeg",
         rank: 0,
         storageKey: "merchants/m/products/prod-1/hero.jpg",
+        name: "hero.jpg",
         status: "done",
       },
     ]);
+    expect(formValue.medias[0].file).toBeUndefined();
+  });
+
+  it("treats missing medias as an empty gallery", () => {
+    expect(transformProductToFormValue(makeProduct({ medias: null })).medias).toEqual([]);
+    expect(toProductMediaFormItems(undefined)).toEqual([]);
   });
 });

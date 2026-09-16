@@ -40,6 +40,12 @@ export function useProductEditEvents(messages?: ProductEditEventMessages) {
             "Product updated, but images could not be saved.",
           );
           break;
+        case "updateDescriptionFailed":
+          toast(
+            "warning",
+            "Product updated, but the description could not be saved.",
+          );
+          break;
         case "updateFailed":
           toast("error", messages?.updateFailed ?? "Failed to update product");
           break;

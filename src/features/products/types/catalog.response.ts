@@ -8,6 +8,7 @@ export interface CatalogRoot {
   createProductMediaUpload?: HateoasLink
   createStagedMediaUpload?: HateoasLink
   replaceProductMedia?: HateoasLink
+  replaceProductDescriptions?: HateoasLink
   getProduct?: HateoasLink
   getVariant?: HateoasLink
   searchCategoryLeaves?: HateoasLink
@@ -116,6 +117,28 @@ export type CreateProductMediaUploadRequest = {
   sizeBytes: number;
 };
 
+export type ProductDescription = {
+  id?: string;
+  name: string;
+  title?: string;
+  description: string;
+};
+
+export type ReplaceProductDescriptionsRequest = {
+  descriptions: {
+    id?: string;
+    name: string;
+    title?: string;
+    description: string;
+  }[];
+};
+
+export type ReplaceProductDescriptionsResponse = {
+  productId: string;
+  descriptions: ProductDescription[];
+  _links?: Record<string, HateoasLink>;
+};
+
 export interface GetFullProductResponse {
   id: string;
   name: string;
@@ -131,7 +154,7 @@ export interface GetFullProductResponse {
   status: string;
   slug: string;
   featured: boolean;
-  descriptions: null;
+  descriptions: ProductDescription[] | null;
   medias: ProductMedia[] | null;
   moderationNote: null;
   variants: {
