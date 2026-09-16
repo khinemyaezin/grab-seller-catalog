@@ -167,4 +167,29 @@ describe("transformProductToFormValue", () => {
     expect(transformProductToFormValue(makeProduct({ medias: null })).medias).toEqual([]);
     expect(toProductMediaFormItems(undefined)).toEqual([]);
   });
+
+  it("maps descriptions onto the form and treats missing descriptions as empty", () => {
+    expect(transformProductToFormValue(makeProduct({ descriptions: null })).descriptions).toEqual([]);
+    expect(
+      transformProductToFormValue(
+        makeProduct({
+          descriptions: [
+            {
+              id: "desc-1",
+              name: "overview",
+              title: "Overview",
+              description: "Soft cotton shirt",
+            },
+          ],
+        }),
+      ).descriptions,
+    ).toEqual([
+      {
+        id: "desc-1",
+        name: "overview",
+        title: "Overview",
+        description: "Soft cotton shirt",
+      },
+    ]);
+  });
 });

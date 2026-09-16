@@ -23,6 +23,14 @@ function formWithMedia(): ProductFormValue {
         storageKey: "merchants/m/products/prod-1/hero.jpg",
       },
     ],
+    descriptions: [
+      {
+        id: "desc-1",
+        name: "overview",
+        title: "Overview",
+        description: "Soft cotton mug",
+      },
+    ],
   };
 }
 
@@ -37,7 +45,9 @@ describe("buildUpdateSellableProductRequest", () => {
     expect(request.productId).toBe("prod-1");
     expect(request.product.name).toBe("Mug");
     expect(request).not.toHaveProperty("medias");
+    expect(request).not.toHaveProperty("descriptions");
     expect(JSON.stringify(request)).not.toContain("hero.jpg");
     expect(JSON.stringify(request)).not.toContain("media-1");
+    expect(JSON.stringify(request)).not.toContain("Soft cotton mug");
   });
 });

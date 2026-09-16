@@ -66,6 +66,7 @@ const formValues: ProductFormValue = {
   },
   variationTypes: [],
   medias: [],
+  descriptions: [],
 };
 
 describe("useProductUpdateWorkflow", () => {

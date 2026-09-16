@@ -2,15 +2,17 @@ import { describe, expect, it } from "vitest";
 import { isCatalogFormDirty } from "./product-form-dirty";
 
 describe("isCatalogFormDirty", () => {
-  it("is false when only medias changed", () => {
+  it("is false when only medias or descriptions changed", () => {
     expect(isCatalogFormDirty({}, false)).toBe(false);
     expect(isCatalogFormDirty({ medias: [] }, false)).toBe(false);
+    expect(isCatalogFormDirty({ descriptions: [] }, false)).toBe(false);
   });
 
   it("is true for any other dirty key or extension slots", () => {
     expect(isCatalogFormDirty({ product: {} }, false)).toBe(true);
     expect(isCatalogFormDirty({ variationTypes: [] }, false)).toBe(true);
     expect(isCatalogFormDirty({ medias: [], product: {} }, false)).toBe(true);
+    expect(isCatalogFormDirty({ descriptions: [], product: {} }, false)).toBe(true);
     expect(isCatalogFormDirty({}, true)).toBe(true);
   });
 });
