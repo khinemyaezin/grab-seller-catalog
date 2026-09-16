@@ -2,8 +2,8 @@ import { resolveUrlTemplate, type HateoasLink } from "@khinemyaezin/seller-api";
 import {
   PRODUCT_OVERVIEW_DESCRIPTION_NAME,
   PRODUCT_OVERVIEW_DESCRIPTION_TITLE,
-} from "@/features/products/constants/product-description";
-import { catalogService } from "@/features/products/api/catalog";
+} from "@/features/products/lib/product-description";
+import { catalogService } from "./catalog";
 import type {
   ProductDescription,
   ReplaceProductDescriptionsRequest,
