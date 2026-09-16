@@ -108,6 +108,27 @@ describe("buildUpdateProductVariantRequest", () => {
     expect(request.manageInventory).toBe(false);
   });
 
+  it("omits inventoryLines when inventory is not tracked", () => {
+    const request = buildUpdateProductVariantRequest(
+      "prod-1",
+      "var-1",
+      makeVariant({ manageInventory: false }),
+      {
+        inventoryLines: [
+          {
+            sku: "TSHIRT-RED-L",
+            locationId: "loc-1",
+            op: "CREATE",
+            create: { initialQuantity: 10, safetyStock: 2 },
+          },
+        ],
+      },
+    );
+
+    expect(request.manageInventory).toBe(false);
+    expect(request).not.toHaveProperty("inventoryLines");
+  });
+
   it("omits empty inventoryLines", () => {
     const request = buildUpdateProductVariantRequest("prod-1", "var-1", makeVariant(), {
       inventoryLines: [],
