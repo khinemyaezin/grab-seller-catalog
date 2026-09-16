@@ -5,6 +5,7 @@ import type {
   UpdateProductVariantRequest,
   UpdateSellableProductPricingLine,
 } from "@/features/products/types";
+import { tracksInventory } from "@/features/products/ui/manage-inventory-field";
 
 export function buildUpdateProductVariantRequest(
   productId: string,
@@ -12,8 +13,9 @@ export function buildUpdateProductVariantRequest(
   variant: ProductVariantForm,
   contributions: UpdateProductContributions = {},
 ): UpdateProductVariantRequest {
+  const manageInventory = tracksInventory(variant.manageInventory);
   const price = toVariantPrice(variant.sku, contributions.pricingLines);
-  const inventoryLines = contributions.inventoryLines?.length
+  const inventoryLines = manageInventory && contributions.inventoryLines?.length
     ? contributions.inventoryLines
     : undefined;
 
@@ -21,7 +23,7 @@ export function buildUpdateProductVariantRequest(
     productId,
     variantId,
     sku: variant.sku,
-    manageInventory: variant.manageInventory === true,
+    manageInventory,
     ...(price ? { price } : {}),
     ...(inventoryLines ? { inventoryLines } : {}),
   };
