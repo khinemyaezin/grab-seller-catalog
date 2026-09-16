@@ -23,6 +23,8 @@ import type {
   ProductSearchResponse,
   ReplaceProductMediaRequest,
   ReplaceProductMediaResponse,
+  ReplaceProductDescriptionsRequest,
+  ReplaceProductDescriptionsResponse,
 } from "@/features/products/types";
 import { api } from "@khinemyaezin/seller-api";
 import type { HateoasLink } from "@khinemyaezin/seller-api";
@@ -83,6 +85,13 @@ export const catalogService = {
     headers?: Record<string, string>,
   ) =>
     api.followLink<ReplaceProductMediaResponse>(link, "PUT", request, undefined, headers),
+
+  replaceProductDescriptions: (
+    link: HateoasLink,
+    request: ReplaceProductDescriptionsRequest,
+    headers?: Record<string, string>,
+  ) =>
+    api.followLink<ReplaceProductDescriptionsResponse>(link, "PUT", request, undefined, headers),
 
   createSellableProduct: (
     link: HateoasLink,

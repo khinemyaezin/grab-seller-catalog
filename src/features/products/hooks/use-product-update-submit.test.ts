@@ -18,6 +18,7 @@ const mockUseWorkflowAwaiter = vi.fn();
 const mockUseCatalogLink = vi.fn();
 const mockStage = vi.fn();
 const mockAttach = vi.fn();
+const mockAttachDescriptions = vi.fn();
 const mockIsCatalogFormDirty = vi.fn();
 const mockExtensionDirty = false;
 
@@ -76,6 +77,10 @@ vi.mock("./use-product-media-sync", () => ({
   useProductMediaSync: () => ({ stage: mockStage, attach: mockAttach }),
 }));
 
+vi.mock("./use-product-description-sync", () => ({
+  useProductDescriptionSync: () => ({ attach: mockAttachDescriptions }),
+}));
+
 vi.mock("@/features/products/lib/product-form-dirty", () => ({
   isCatalogFormDirty: (...args: unknown[]) => mockIsCatalogFormDirty(...args),
 }));
@@ -95,6 +100,14 @@ const seed: ProductFormValue = {
       contentType: "image/jpeg",
       rank: 0,
       storageKey: "merchants/m/products/prod-1/keep.jpg",
+    },
+  ],
+  descriptions: [
+    {
+      id: "desc-1",
+      name: "overview",
+      title: "Overview",
+      description: "A handmade mug.",
     },
   ],
 };
@@ -136,6 +149,7 @@ describe("useProductUpdateSubmit", () => {
     mockValidate.mockResolvedValue([{ valid: true }]);
     mockStage.mockResolvedValue({ status: "synced" });
     mockAttach.mockResolvedValue({ status: "synced" });
+    mockAttachDescriptions.mockResolvedValue({ status: "synced" });
   });
 
   it("skips the saga when only the gallery is dirty", async () => {
@@ -155,6 +169,7 @@ describe("useProductUpdateSubmit", () => {
     expect(mockAwaitWorkflow).not.toHaveBeenCalled();
     expect(mockStage).toHaveBeenCalled();
     expect(mockAttach).toHaveBeenCalledWith("prod-1");
+    expect(mockAttachDescriptions).toHaveBeenCalledWith("prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
   });
 
@@ -174,6 +189,10 @@ describe("useProductUpdateSubmit", () => {
       order.push("attach");
       return { status: "synced" };
     });
+    mockAttachDescriptions.mockImplementation(async () => {
+      order.push("descriptions");
+      return { status: "synced" };
+    });
 
     const { result } = renderHook(() =>
       useProductUpdateSubmit({
@@ -185,8 +204,9 @@ describe("useProductUpdateSubmit", () => {
 
     await result.current.submit();
 
-    expect(order).toEqual(["saga", "stage", "attach"]);
+    expect(order).toEqual(["saga", "stage", "attach", "descriptions"]);
     expect(mockMutateAsync.mock.calls[0][0].request).not.toHaveProperty("medias");
+    expect(mockMutateAsync.mock.calls[0][0].request).not.toHaveProperty("descriptions");
     expect(mockAttach).toHaveBeenCalledWith("prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
   });
@@ -207,6 +227,69 @@ describe("useProductUpdateSubmit", () => {
     await result.current.submit();
 
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateMediaFailed" });
+    expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
+  });
+
+  it("throws when media fails and catalog is clean", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(false);
+    mockStage.mockResolvedValue({ status: "failed", error: new Error("Storage upload failed") });
+    const onLifecycleEvent = vi.fn();
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed,
+        onLifecycleEvent,
+      }),
+    );
+
+    await expect(result.current.submit()).rejects.toThrow("Storage upload failed");
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateMediaFailed" });
+    expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
+  });
+
+  it("skips the saga when only descriptions are dirty", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(false);
+    mockStage.mockResolvedValue({ status: "skipped" });
+    mockAttach.mockResolvedValue({ status: "skipped" });
+    mockAttachDescriptions.mockResolvedValue({ status: "synced" });
+    const onLifecycleEvent = vi.fn();
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed,
+        onLifecycleEvent,
+      }),
+    );
+
+    await result.current.submit();
+
+    expect(mockAwaitWorkflow).not.toHaveBeenCalled();
+    expect(mockAttachDescriptions).toHaveBeenCalledWith("prod-1");
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
+  });
+
+  it("throws when description attach fails and catalog is clean", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(false);
+    mockStage.mockResolvedValue({ status: "skipped" });
+    mockAttach.mockResolvedValue({ status: "skipped" });
+    mockAttachDescriptions.mockResolvedValue({
+      status: "failed",
+      error: new Error("Description replace failed"),
+    });
+    const onLifecycleEvent = vi.fn();
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed,
+        onLifecycleEvent,
+      }),
+    );
+
+    await expect(result.current.submit()).rejects.toThrow("Description replace failed");
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateDescriptionFailed" });
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
   });
 });

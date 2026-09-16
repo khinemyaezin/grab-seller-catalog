@@ -61,11 +61,13 @@ export type ProductLifecycleEvent =
   | { type: "titleResolved"; title: string }
   | { type: "created" }
   | { type: "createMediaFailed" }
+  | { type: "createDescriptionFailed" }
   | { type: "createFailed" }
   | { type: "createTimedOut" }
   | { type: "validationFailed"; name?: string; errors?: SlotValidationErrors }
   | { type: "updated" }
   | { type: "updateMediaFailed" }
+  | { type: "updateDescriptionFailed" }
   | { type: "updateFailed" }
   | { type: "updateTimedOut" }
   | { type: "archived"; name?: string }

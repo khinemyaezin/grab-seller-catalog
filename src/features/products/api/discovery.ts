@@ -14,6 +14,7 @@ export async function fetchCatalogRoot(link: HateoasLink): Promise<CatalogRoot> 
     createProductMediaUpload: resolveLink(response._links, "create-product-media-upload"),
     createStagedMediaUpload: resolveLink(response._links, "create-staged-media-upload"),
     replaceProductMedia: resolveLink(response._links, "replace-product-media"),
+    replaceProductDescriptions: resolveLink(response._links, "replace-product-descriptions"),
     searchCategoryLeaves: resolveLink(response._links, "search-category-leaves"),
     searchVariantTypes: resolveLink(response._links, "search-variant-types"),
     searchVariantOptions: resolveLink(response._links, "search-variant-options"),

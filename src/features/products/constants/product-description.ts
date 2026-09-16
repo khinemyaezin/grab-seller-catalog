@@ -1,0 +1,2 @@
+export const PRODUCT_OVERVIEW_DESCRIPTION_NAME = "overview";
+export const PRODUCT_OVERVIEW_DESCRIPTION_TITLE = "Overview";

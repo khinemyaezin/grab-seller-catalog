@@ -23,6 +23,13 @@ function untrackedStandalone(): ProductFormValue {
         storageKey: "should-not-appear",
       },
     ],
+    descriptions: [
+      {
+        name: "overview",
+        title: "Overview",
+        description: "should-not-appear-either",
+      },
+    ],
   };
 }
 
@@ -40,6 +47,7 @@ describe("create sellable product inventory tracking", () => {
     ]);
     expect(request.inventoryLines).toEqual([]);
     expect(request).not.toHaveProperty("medias");
+    expect(request).not.toHaveProperty("descriptions");
   });
 
   it("does not copy form medias onto the workflow request", () => {
@@ -47,6 +55,8 @@ describe("create sellable product inventory tracking", () => {
 
     expect(JSON.stringify(request)).not.toContain("blob:hero");
     expect(JSON.stringify(request)).not.toContain("should-not-appear");
+    expect(JSON.stringify(request)).not.toContain("should-not-appear-either");
     expect(request).not.toHaveProperty("medias");
+    expect(request).not.toHaveProperty("descriptions");
   });
 });

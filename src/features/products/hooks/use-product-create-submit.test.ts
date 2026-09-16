@@ -16,6 +16,7 @@ const mockUseWorkflowAwaiter = vi.fn();
 const mockResolveWorkflowProductId = vi.fn();
 const mockStage = vi.fn();
 const mockAttach = vi.fn();
+const mockAttachDescriptions = vi.fn();
 
 vi.mock("react-hook-form", () => ({
   useFormContext: () => ({ getValues: mockGetValues }),
@@ -64,6 +65,10 @@ vi.mock("@/features/products/hooks/use-product-media-sync", () => ({
   useProductMediaSync: () => ({ stage: mockStage, attach: mockAttach }),
 }));
 
+vi.mock("@/features/products/hooks/use-product-description-sync", () => ({
+  useProductDescriptionSync: () => ({ attach: mockAttachDescriptions }),
+}));
+
 const formValues = {
   product: { name: "Mug", category: null, variants: [], standaloneVariant: { sku: "SKU-1" } },
   variationTypes: [],
@@ -75,6 +80,9 @@ const formValues = {
       file: new File(["x"], "hero.jpg", { type: "image/jpeg" }),
       rank: 0,
     },
+  ],
+  descriptions: [
+    { name: "overview", title: "Overview", description: "A handmade mug." },
   ],
 };
 
@@ -103,6 +111,7 @@ describe("useProductCreateSubmit", () => {
     mockResolveWorkflowProductId.mockResolvedValue("prod-1");
     mockStage.mockResolvedValue({ status: "synced" });
     mockAttach.mockResolvedValue({ status: "synced" });
+    mockAttachDescriptions.mockResolvedValue({ status: "synced" });
     mockValidate.mockResolvedValue([{ valid: true, groupId: "g1", slotId: "s1" }]);
   });
 
@@ -122,6 +131,10 @@ describe("useProductCreateSubmit", () => {
       order.push(`attach:${productId}`);
       return { status: "synced" };
     });
+    mockAttachDescriptions.mockImplementation(async (productId: string) => {
+      order.push(`descriptions:${productId}`);
+      return { status: "synced" };
+    });
     const { result } = renderHook(() =>
       useProductCreateSubmit({
         link: { href: "/workflows/create-sellable-product" },
@@ -132,13 +145,15 @@ describe("useProductCreateSubmit", () => {
 
     await result.current.submit();
 
-    expect(order).toEqual(["stage", "create", "attach:prod-1"]);
+    expect(order).toEqual(["stage", "create", "attach:prod-1", "descriptions:prod-1"]);
     expect(mockBuildCreateSellableProductRequest).toHaveBeenCalledWith(
       formValues,
       { pricingLines: [], inventoryLines: [] },
     );
     expect(mockMutateAsync.mock.calls[0][0].request).not.toHaveProperty("medias");
+    expect(mockMutateAsync.mock.calls[0][0].request).not.toHaveProperty("descriptions");
     expect(mockAttach).toHaveBeenCalledWith("prod-1");
+    expect(mockAttachDescriptions).toHaveBeenCalledWith("prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "created" });
     expect(onSuccess).toHaveBeenCalledWith("prod-1");
     expect(mockInvalidateProductQueries).toHaveBeenCalledWith(mockQueryClient, "prod-1");
@@ -159,6 +174,7 @@ describe("useProductCreateSubmit", () => {
     await expect(result.current.submit()).rejects.toThrow("Storage upload failed (403)");
     expect(mockMutateAsync).not.toHaveBeenCalled();
     expect(mockAttach).not.toHaveBeenCalled();
+    expect(mockAttachDescriptions).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "created" });
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "createFailed" });
@@ -180,6 +196,26 @@ describe("useProductCreateSubmit", () => {
 
     expect(mockMutateAsync).toHaveBeenCalled();
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "createMediaFailed" });
+    expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "created" });
+    expect(onSuccess).toHaveBeenCalledWith("prod-1");
+  });
+
+  it("emits createDescriptionFailed when description attach fails after a successful media attach", async () => {
+    mockAttachDescriptions.mockResolvedValue({ status: "failed", error: new Error("Description replace failed") });
+    const onLifecycleEvent = vi.fn();
+    const onSuccess = vi.fn();
+    const { result } = renderHook(() =>
+      useProductCreateSubmit({
+        link: { href: "/workflows/create-sellable-product" },
+        onLifecycleEvent,
+        onSuccess,
+      }),
+    );
+
+    await result.current.submit();
+
+    expect(mockMutateAsync).toHaveBeenCalled();
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "createDescriptionFailed" });
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "created" });
     expect(onSuccess).toHaveBeenCalledWith("prod-1");
   });
