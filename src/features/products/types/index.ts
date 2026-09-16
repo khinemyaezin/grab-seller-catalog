@@ -54,6 +54,8 @@ export type {
   ReplaceProductDescriptionsRequest,
   ReplaceProductDescriptionsResponse,
   GetVariantResponse,
+  BatchVariantImagesRequest,
+  BatchVariantImagesResponse,
   VariationMatrixResponse,
   VariationMatrixResponseVariation,
   VariationMatrixResponseVariantType,

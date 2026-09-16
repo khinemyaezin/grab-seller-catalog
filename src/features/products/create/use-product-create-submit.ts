@@ -7,6 +7,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { invalidateProductQueries } from "@/features/products/api/use-products";
 import { useCreateSellableProductCommand } from "./use-product-create-command";
 import { buildCreateSellableProductRequest } from "@/features/products/lib/create-sellable-product-request";
+import {
+  runWorkflowChain,
+  toWorkflowStepResult,
+} from "@/features/products/lib/run-workflow-chain";
 import type {
   ProductContributions,
   ProductFormValue,
@@ -30,6 +34,10 @@ export type UseProductCreateSubmitResult = {
   submit: () => Promise<void>;
 };
 
+type ProductCreateChainCtx = {
+  productId?: string;
+};
+
 export function useProductCreateSubmit({
   link,
   onLifecycleEvent,
@@ -49,34 +57,68 @@ export function useProductCreateSubmit({
       throw new Error("Validation failed");
     }
 
-    const staged = await stage();
-    if (staged.status === "failed") {
-      throw staged.error;
-    }
+    const chain = await runWorkflowChain<ProductCreateChainCtx>(
+      [
+        {
+          id: "stageMedia",
+          run: async () => toWorkflowStepResult(await stage()),
+          onFailure: "abort",
+        },
+        {
+          id: "createEntity",
+          run: async () => {
+            const contributions = mergeContributions(results, PRODUCT_SLICES) as ProductContributions;
+            const payload = buildCreateSellableProductRequest(getValues(), contributions);
+            const commandResult = await execute(payload);
+            return { status: "ok" as const, patch: { productId: commandResult.productId } };
+          },
+          onFailure: "abort",
+        },
+        {
+          id: "attachMedia",
+          run: async (ctx) => {
+            if (!ctx.productId) {
+              return { status: "failed", error: new Error("Missing productId") };
+            }
+            return toWorkflowStepResult(await attach(ctx.productId));
+          },
+          onFailure: "continue",
+        },
+        {
+          id: "attachDescriptions",
+          run: async (ctx) => {
+            if (!ctx.productId) {
+              return { status: "failed", error: new Error("Missing productId") };
+            }
+            return toWorkflowStepResult(await attachDescriptions(ctx.productId));
+          },
+          onFailure: "continue",
+        },
+      ],
+      {},
+    );
 
-    const contributions = mergeContributions(results, PRODUCT_SLICES) as ProductContributions;
-    const payload = buildCreateSellableProductRequest(getValues(), contributions);
-
-    let productId: string;
-    try {
-      const commandResult = await execute(payload);
-      productId = commandResult.productId;
-    } catch (error) {
-      resetCommand();
-      if (error instanceof WorkflowTimeoutError) {
-        onLifecycleEvent?.({ type: "createTimedOut" });
-      } else {
-        onLifecycleEvent?.({ type: "createFailed" });
+    if (chain.status === "aborted") {
+      const error = chain.error ?? new Error("Workflow aborted");
+      if (chain.failedStepId === "createEntity") {
+        resetCommand();
+        if (error instanceof WorkflowTimeoutError) {
+          onLifecycleEvent?.({ type: "createTimedOut" });
+        } else {
+          onLifecycleEvent?.({ type: "createFailed" });
+        }
       }
       throw error;
     }
 
-    const media = await attach(productId);
-    const descriptions = await attachDescriptions(productId);
+    const productId = chain.ctx.productId;
+    if (!productId) {
+      throw new Error("Missing productId");
+    }
 
-    if (media.status === "failed") {
+    if (chain.steps.attachMedia?.status === "failed") {
       onLifecycleEvent?.({ type: "createMediaFailed", productId });
-    } else if (descriptions.status === "failed") {
+    } else if (chain.steps.attachDescriptions?.status === "failed") {
       onLifecycleEvent?.({ type: "createDescriptionFailed", productId });
     } else {
       onLifecycleEvent?.({ type: "created", productId });

@@ -13,6 +13,8 @@ function makeVariant(overrides: Partial<ProductVariantForm> = {}): ProductVarian
       { typeId: "t1", optionId: "o1" },
       { typeId: "t2", optionId: "o2" },
     ],
+    mediaIds: [],
+    thumbnailMediaId: null,
     ...overrides,
   };
 }

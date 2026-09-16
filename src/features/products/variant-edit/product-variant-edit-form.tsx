@@ -15,6 +15,7 @@ import {
 } from "@khinemyaezin/seller-ui/components/card";
 import type {
   ProductLifecycleEvent,
+  ProductMedia,
   ProductVariantForm,
 } from "@/features/products/types";
 import { useProductVariantUpdateSubmit } from "./use-product-variant-update-submit";
@@ -23,12 +24,16 @@ import { InventoryLineEditFullSlot } from "@/features/products/ui/slots/inventor
 import { pricingEditGroupId } from "@/features/products/lib/pricing-instance-id";
 import { inventoryEditGroupId } from "@/features/products/lib/inventory-group-id";
 import ProductVariantFieldSet from "./product-variant-fieldset";
+import ProductVariantMediaFieldSet from "./product-variant-media-fieldset";
 import { ManageInventoryField, tracksInventory } from "@/features/products/ui/manage-inventory-field";
+import type { HateoasLink } from "@khinemyaezin/seller-api";
 
 export type ProductVariantEditFormProps = {
   productId: string;
   variantId: string;
   seed: ProductVariantForm;
+  productMedias?: ProductMedia[];
+  actions?: Record<string, HateoasLink>;
   onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
 };
 
@@ -36,6 +41,8 @@ export default function ProductVariantEditForm({
   productId,
   variantId,
   seed,
+  productMedias = [],
+  actions,
   onLifecycleEvent,
 }: ProductVariantEditFormProps) {
   const form = useForm<ProductVariantForm>({
@@ -54,6 +61,8 @@ export default function ProductVariantEditForm({
         productId={productId}
         variantId={variantId}
         seed={seed}
+        productMedias={productMedias}
+        actions={actions}
         onLifecycleEvent={onLifecycleEvent}
       />
     </FormProvider>
@@ -64,6 +73,8 @@ function ProductVariantEditFormFields({
   productId,
   variantId,
   seed,
+  productMedias = [],
+  actions,
   onLifecycleEvent,
 }: ProductVariantEditFormProps) {
   const { handleSubmit, reset, formState: { isDirty }, control } = useFormContext<ProductVariantForm>();
@@ -73,6 +84,8 @@ function ProductVariantEditFormFields({
   const { submit } = useProductVariantUpdateSubmit({
     productId,
     variantId,
+    seed,
+    actions,
     onLifecycleEvent: (event) => {
       if (event.type === "updated") {
         resetExtensionDirty();
@@ -117,6 +130,11 @@ function ProductVariantEditFormFields({
       <Card>
         <CardContent>
           <ProductVariantFieldSet />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent>
+          <ProductVariantMediaFieldSet productMedias={productMedias ?? []} />
         </CardContent>
       </Card>
       <Card>

@@ -14,10 +14,16 @@ import { useUpdateSellableProductCommand } from "./use-product-update-command";
 import { isCatalogFormDirty } from "@/features/products/lib/product-form-dirty";
 import { determineUpdateIntent } from "@/features/products/lib/update-product-request";
 import { buildUpdateSellableProductRequest } from "@/features/products/lib/update-sellable-product-request";
+import {
+  isWorkflowChainIdle,
+  runWorkflowChain,
+  toWorkflowStepResult,
+} from "@/features/products/lib/run-workflow-chain";
 import type {
   ProductFormValue,
   ProductLifecycleEvent,
   UpdateProductContributions,
+  UpdateSellableProductRequest,
 } from "@/features/products/types";
 import { useProductDescriptionSync } from "@/features/products/use-product-description-sync";
 import { useProductMediaSync } from "@/features/products/use-product-media-sync";
@@ -39,6 +45,21 @@ export type UseProductUpdateSubmitResult = {
   submit: () => Promise<void>;
 };
 
+type ProductUpdateChainCtx = {
+  productId: string;
+  entityUpdated: boolean;
+};
+
+function secondaryFailureEvent(stepId: string | undefined): ProductLifecycleEvent | undefined {
+  if (stepId === "stageMedia" || stepId === "attachMedia") {
+    return { type: "updateMediaFailed" };
+  }
+  if (stepId === "attachDescriptions") {
+    return { type: "updateDescriptionFailed" };
+  }
+  return undefined;
+}
+
 export function useProductUpdateSubmit({
   productId,
   seed,
@@ -59,6 +80,7 @@ export function useProductUpdateSubmit({
   const submit = useCallback(async () => {
     const catalogDirty = isCatalogFormDirty(dirtyFields, extensionDirty);
 
+    let payload: UpdateSellableProductRequest | undefined;
     if (catalogDirty) {
       const results = await validate();
       const errors = collectSlotFieldErrors(results);
@@ -75,16 +97,52 @@ export function useProductUpdateSubmit({
         results,
         PRODUCT_SLICES,
       ) as UpdateProductContributions;
-      const payload = buildUpdateSellableProductRequest(
+      payload = buildUpdateSellableProductRequest(
         productId,
         values,
         intent,
         contributions,
       );
+    }
 
-      try {
-        await execute(payload);
-      } catch (error) {
+    const onSecondaryFailure = (ctx: ProductUpdateChainCtx) =>
+      ctx.entityUpdated ? "stop" : "abort";
+
+    const chain = await runWorkflowChain<ProductUpdateChainCtx>(
+      [
+        {
+          id: "updateEntity",
+          run: async () => {
+            if (!payload) {
+              return { status: "skipped" };
+            }
+            await execute(payload);
+            return { status: "ok", patch: { entityUpdated: true } };
+          },
+          onFailure: "abort",
+        },
+        {
+          id: "stageMedia",
+          run: async () => toWorkflowStepResult(await stage()),
+          onFailure: onSecondaryFailure,
+        },
+        {
+          id: "attachMedia",
+          run: async (ctx) => toWorkflowStepResult(await attach(ctx.productId)),
+          onFailure: onSecondaryFailure,
+        },
+        {
+          id: "attachDescriptions",
+          run: async (ctx) => toWorkflowStepResult(await attachDescriptions(ctx.productId)),
+          onFailure: onSecondaryFailure,
+        },
+      ],
+      { productId, entityUpdated: false },
+    );
+
+    if (chain.status === "aborted") {
+      const error = chain.error ?? new Error("Workflow aborted");
+      if (chain.failedStepId === "updateEntity") {
         resetCommand();
         if (error instanceof WorkflowTimeoutError) {
           onLifecycleEvent?.({ type: "updateTimedOut" });
@@ -93,47 +151,24 @@ export function useProductUpdateSubmit({
         }
         throw error;
       }
+      const event = secondaryFailureEvent(chain.failedStepId);
+      if (event) {
+        onLifecycleEvent?.(event);
+      }
+      throw error;
     }
 
-    const staged = await stage();
-    if (staged.status === "failed") {
-      onLifecycleEvent?.({ type: "updateMediaFailed" });
-      if (!catalogDirty) {
-        throw staged.error;
+    if (chain.status === "stopped") {
+      const event = secondaryFailureEvent(chain.failedStepId);
+      if (event) {
+        onLifecycleEvent?.(event);
       }
       void invalidateProductQueries(queryClient, productId);
       resetCommand();
       return;
     }
 
-    const media = await attach(productId);
-    const descriptions = await attachDescriptions(productId);
-    if (
-      !catalogDirty
-      && staged.status === "skipped"
-      && media.status === "skipped"
-      && descriptions.status === "skipped"
-    ) {
-      return;
-    }
-
-    if (media.status === "failed") {
-      onLifecycleEvent?.({ type: "updateMediaFailed" });
-      if (!catalogDirty) {
-        throw media.error;
-      }
-      void invalidateProductQueries(queryClient, productId);
-      resetCommand();
-      return;
-    }
-
-    if (descriptions.status === "failed") {
-      onLifecycleEvent?.({ type: "updateDescriptionFailed" });
-      if (!catalogDirty) {
-        throw descriptions.error;
-      }
-      void invalidateProductQueries(queryClient, productId);
-      resetCommand();
+    if (isWorkflowChainIdle(chain)) {
       return;
     }
 

@@ -7,8 +7,14 @@ import {
   useValidateAllSlots,
 } from "@khinemyaezin/seller-ui";
 import { PRODUCT_CONTRIBUTION_SLICES } from "@khinemyaezin/seller-contracts";
+import { resolveLink, type HateoasLink } from "@khinemyaezin/seller-api";
 import { invalidateProductQueries } from "@/features/products/api/use-products";
+import { attachVariantMedia } from "@/features/products/api/variant-media";
 import { buildUpdateProductVariantRequest } from "@/features/products/lib/update-product-variant-request";
+import {
+  runWorkflowChain,
+  toWorkflowStepResult,
+} from "@/features/products/lib/run-workflow-chain";
 import type {
   ProductLifecycleEvent,
   ProductVariantForm,
@@ -25,6 +31,8 @@ const PRODUCT_SLICES = [
 export type UseProductVariantUpdateSubmitOptions = {
   productId: string;
   variantId: string;
+  seed: ProductVariantForm;
+  actions?: Record<string, HateoasLink>;
   onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
 };
 
@@ -32,9 +40,15 @@ export type UseProductVariantUpdateSubmitResult = {
   submit: () => Promise<void>;
 };
 
+type VariantUpdateChainCtx = {
+  entityUpdated: boolean;
+};
+
 export function useProductVariantUpdateSubmit({
   productId,
   variantId,
+  seed,
+  actions,
   onLifecycleEvent,
 }: UseProductVariantUpdateSubmitOptions): UseProductVariantUpdateSubmitResult {
   const queryClient = useQueryClient();
@@ -55,29 +69,70 @@ export function useProductVariantUpdateSubmit({
       throw new Error("Validation failed");
     }
 
+    const values = getValues();
     const contributions = mergeContributions(results, PRODUCT_SLICES) as UpdateProductContributions;
     const payload = buildUpdateProductVariantRequest(
       productId,
       variantId,
-      getValues(),
+      values,
       contributions,
     );
+    const batchLink = resolveLink(actions, "batch-variant-images");
 
-    try {
-      await execute(payload);
-      void invalidateProductQueries(queryClient, productId);
-      onLifecycleEvent?.({ type: "updated" });
+    const chain = await runWorkflowChain<VariantUpdateChainCtx>(
+      [
+        {
+          id: "updateEntity",
+          run: async () => {
+            await execute(payload);
+            return { status: "ok", patch: { entityUpdated: true } };
+          },
+          onFailure: "abort",
+        },
+        {
+          id: "attachVariantMedia",
+          run: async () => toWorkflowStepResult(await attachVariantMedia({
+            link: batchLink,
+            mediaIds: values.mediaIds ?? [],
+            thumbnailMediaId: values.thumbnailMediaId,
+            seedMediaIds: seed.mediaIds ?? [],
+            seedThumbnailMediaId: seed.thumbnailMediaId,
+          })),
+          onFailure: (ctx) => ctx.entityUpdated ? "stop" : "abort",
+        },
+      ],
+      { entityUpdated: false },
+    );
+
+    if (chain.status === "aborted") {
+      const error = chain.error ?? new Error("Workflow aborted");
       resetCommand();
-    } catch (error) {
-      resetCommand();
-      if (error instanceof WorkflowTimeoutError) {
-        onLifecycleEvent?.({ type: "updateTimedOut" });
-      } else {
-        onLifecycleEvent?.({ type: "updateFailed" });
+      if (chain.failedStepId === "updateEntity") {
+        if (error instanceof WorkflowTimeoutError) {
+          onLifecycleEvent?.({ type: "updateTimedOut" });
+        } else {
+          onLifecycleEvent?.({ type: "updateFailed" });
+        }
+      } else if (chain.failedStepId === "attachVariantMedia") {
+        onLifecycleEvent?.({ type: "updateMediaFailed" });
       }
       throw error;
     }
+
+    if (chain.status === "stopped") {
+      if (chain.failedStepId === "attachVariantMedia") {
+        onLifecycleEvent?.({ type: "updateMediaFailed" });
+      }
+      void invalidateProductQueries(queryClient, productId);
+      resetCommand();
+      return;
+    }
+
+    void invalidateProductQueries(queryClient, productId);
+    onLifecycleEvent?.({ type: "updated" });
+    resetCommand();
   }, [
+    actions,
     execute,
     getValues,
     link,
@@ -85,6 +140,8 @@ export function useProductVariantUpdateSubmit({
     productId,
     queryClient,
     resetCommand,
+    seed.mediaIds,
+    seed.thumbnailMediaId,
     validate,
     variantId,
   ]);
