@@ -48,6 +48,8 @@ describe("transformVariantToFormValue & getVariantName", () => {
         { typeId: "t1", optionId: "o1" },
         { typeId: "t2", optionId: "o2" },
       ],
+      mediaIds: [],
+      thumbnailMediaId: null,
     });
   });
 
@@ -73,6 +75,28 @@ describe("transformVariantToFormValue & getVariantName", () => {
       sku: "MUG-1",
       manageInventory: false,
       variations: [],
+      mediaIds: [],
+      thumbnailMediaId: null,
+    });
+  });
+
+  it("orders thumbnail first when seeding assigned media", () => {
+    const apiData: GetVariantResponse = {
+      productId: "prod-3",
+      productName: "Jacket",
+      variantId: "var-3",
+      sku: "JKT-1",
+      status: "ACTIVE",
+      matrixKey: "navy",
+      variations: [{ typeId: "t1", typeName: "Color", optionId: "o1", optionName: "Navy" }],
+      manageInventory: true,
+      mediaIds: ["m1", "m2"],
+      thumbnailMediaId: "m2",
+    };
+
+    expect(transformVariantToFormValue(apiData)).toMatchObject({
+      mediaIds: ["m2", "m1"],
+      thumbnailMediaId: "m2",
     });
   });
 });
@@ -127,6 +151,8 @@ describe("useProductVariantEdit hook", () => {
           { typeId: "t1", optionId: "o1" },
           { typeId: "t2", optionId: "o2" },
         ],
+        mediaIds: [],
+        thumbnailMediaId: null,
       });
     });
 

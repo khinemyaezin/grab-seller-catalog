@@ -90,6 +90,8 @@ export default function ProductVariantEditView({
                     productId={productId}
                     variantId={currentVariantId}
                     seed={seed}
+                    productMedias={product?.medias ?? []}
+                    actions={actions}
                     onLifecycleEvent={onLifecycleEvent}
                   />
                 ) : null}
@@ -112,21 +114,22 @@ type ProductInfoViewProps = {
   product: {
     name: string;
     variants?: unknown[];
-    image?: string;
+    medias?: { url: string; rank: number }[] | null;
   };
   children: ReactNode;
 };
 
 function ProductInfoView({ product, children }: ProductInfoViewProps) {
   const variantCount = product.variants?.length ?? 0;
+  const hero = product.medias?.find((media) => media.rank === 0) ?? product.medias?.[0];
 
   return (
     <Card className="py-0 gap-0 overflow-hidden">
       <CardHeader className="border-b p-4 flex flex-row items-center gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center border bg-muted overflow-hidden">
-          {product.image ? (
+          {hero?.url ? (
             <img
-              src={product.image}
+              src={hero.url}
               alt={product.name ?? "Product image"}
               className="h-full w-full object-cover"
             />

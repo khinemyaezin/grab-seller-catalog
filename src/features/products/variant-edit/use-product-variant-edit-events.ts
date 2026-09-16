@@ -41,6 +41,9 @@ export function useProductVariantEditEvents(messages?: ProductVariantEditEventMe
         case "updateFailed":
           toast("error", messages?.updateFailed ?? "Failed to update variant");
           break;
+        case "updateMediaFailed":
+          toast("error", "Variant saved, but images could not be updated");
+          break;
         case "updateTimedOut":
           toast("error", messages?.updateTimedOut ?? "Variant update is still running. Check back shortly.");
           break;

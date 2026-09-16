@@ -7,6 +7,7 @@ const mockValidate = vi.fn();
 const mockExecute = vi.fn();
 const mockResetCommand = vi.fn();
 const mockInvalidateProductQueries = vi.fn();
+const mockAttachVariantMedia = vi.fn();
 const mockQueryClient = {};
 const mockMergeContributions = vi.fn();
 const mockCollectSlotFieldErrors = vi.fn();
@@ -45,6 +46,10 @@ vi.mock("@/features/products/lib/update-product-variant-request", () => ({
     mockBuildUpdateProductVariantRequest(...args),
 }));
 
+vi.mock("@/features/products/api/variant-media", () => ({
+  attachVariantMedia: (...args: unknown[]) => mockAttachVariantMedia(...args),
+}));
+
 vi.mock("./use-product-variant-update-command", () => ({
   useUpdateProductVariantCommand: () => ({
     execute: mockExecute,
@@ -65,6 +70,12 @@ const variantValues = {
   sku: "SKU-1",
   manageInventory: true,
   variations: [{ typeId: "t1", optionId: "o1" }],
+  mediaIds: ["m1"],
+  thumbnailMediaId: "m1",
+};
+
+const seed = {
+  ...variantValues,
 };
 
 describe("useProductVariantUpdateSubmit", () => {
@@ -80,6 +91,7 @@ describe("useProductVariantUpdateSubmit", () => {
       sku: "SKU-1",
     });
     mockExecute.mockResolvedValue(undefined);
+    mockAttachVariantMedia.mockResolvedValue({ status: "skipped" });
     mockValidate.mockResolvedValue([{ valid: true, groupId: "g1", slotId: "s1" }]);
   });
 
@@ -91,6 +103,7 @@ describe("useProductVariantUpdateSubmit", () => {
       useProductVariantUpdateSubmit({
         productId: "prod-1",
         variantId: "var-1",
+        seed,
         onLifecycleEvent,
       }),
     );
@@ -109,6 +122,7 @@ describe("useProductVariantUpdateSubmit", () => {
       useProductVariantUpdateSubmit({
         productId: "prod-1",
         variantId: "var-1",
+        seed,
         onLifecycleEvent,
       }),
     );
@@ -140,6 +154,10 @@ describe("useProductVariantUpdateSubmit", () => {
       useProductVariantUpdateSubmit({
         productId: "prod-1",
         variantId: "var-1",
+        seed,
+        actions: {
+          "batch-variant-images": { href: "/products/prod-1/variants/var-1/images/batch" },
+        },
         onLifecycleEvent,
       }),
     );
@@ -153,8 +171,41 @@ describe("useProductVariantUpdateSubmit", () => {
       contributions,
     );
     expect(mockExecute).toHaveBeenCalledWith(payload);
+    expect(mockAttachVariantMedia).toHaveBeenCalledWith({
+      link: { href: "/products/prod-1/variants/var-1/images/batch" },
+      mediaIds: ["m1"],
+      thumbnailMediaId: "m1",
+      seedMediaIds: ["m1"],
+      seedThumbnailMediaId: "m1",
+    });
     expect(mockInvalidateProductQueries).toHaveBeenCalledWith(mockQueryClient, "prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
     expect(mockResetCommand).toHaveBeenCalled();
+  });
+
+  it("emits updateMediaFailed when attaching variant media fails after the entity save", async () => {
+    mockAttachVariantMedia.mockResolvedValue({
+      status: "failed",
+      error: new Error("media failed"),
+    });
+    const onLifecycleEvent = vi.fn();
+
+    const { result } = renderHook(() =>
+      useProductVariantUpdateSubmit({
+        productId: "prod-1",
+        variantId: "var-1",
+        seed,
+        actions: {
+          "batch-variant-images": { href: "/products/prod-1/variants/var-1/images/batch" },
+        },
+        onLifecycleEvent,
+      }),
+    );
+
+    await result.current.submit();
+
+    expect(mockExecute).toHaveBeenCalled();
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateMediaFailed" });
+    expect(mockInvalidateProductQueries).toHaveBeenCalledWith(mockQueryClient, "prod-1");
   });
 });

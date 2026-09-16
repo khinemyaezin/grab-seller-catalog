@@ -18,6 +18,7 @@ export interface CatalogRoot {
   createSellableProduct?: HateoasLink
   updateSellableProduct?: HateoasLink
   updateProductVariant?: HateoasLink
+  batchVariantImages?: HateoasLink
 }
 
 export type VariationMatrixResponseVariation = {
@@ -51,6 +52,7 @@ export interface ProductResponse {
   slug: string,
   categoryName: string,
   categoryId: string,
+  thumbnail?: ProductMedia | null,
   _links?: Record<string, HateoasLink>;
 }
 
@@ -76,6 +78,8 @@ export interface GetVariantResponse {
     typeName: string;
   }[];
   manageInventory: boolean;
+  mediaIds?: string[];
+  thumbnailMediaId?: string | null;
   _links?: Record<string, HateoasLink>;
 }
 
@@ -124,6 +128,19 @@ export type ProductDescription = {
   description: string;
 };
 
+export type BatchVariantImagesRequest = {
+  mediaIds: string[];
+  thumbnailMediaId?: string | null;
+};
+
+export type BatchVariantImagesResponse = {
+  productId: string;
+  variantId: string;
+  mediaIds: string[];
+  thumbnailMediaId?: string | null;
+  _links?: Record<string, HateoasLink>;
+};
+
 export type ReplaceProductDescriptionsRequest = {
   descriptions: {
     id?: string;
@@ -163,6 +180,8 @@ export interface GetFullProductResponse {
     status: string;
     matrixKey: string;
     manageInventory?: boolean;
+    mediaIds?: string[];
+    thumbnailMediaId?: string | null;
     variations: {
       optionId: string;
       optionName: string;

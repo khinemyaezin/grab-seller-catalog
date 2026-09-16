@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { GetVariantResponse, ProductVariantForm } from "@/features/products/types";
 import { useProductVariantGet } from "@/features/products/api/use-products";
 import { useCatalogLink } from "@/features/products/api/use-root";
+import { orderVariantMediaIds } from "@/features/products/lib/variant-media";
 
 export const DEFAULT_PRODUCT_VARIANT_FORM_VALUE: ProductVariantForm = {
   id: "",
@@ -10,6 +11,8 @@ export const DEFAULT_PRODUCT_VARIANT_FORM_VALUE: ProductVariantForm = {
   sku: "",
   manageInventory: false,
   variations: [],
+  mediaIds: [],
+  thumbnailMediaId: null,
 };
 
 export const DEFAULT_VARIANT_FORM: ProductVariantForm = DEFAULT_PRODUCT_VARIANT_FORM_VALUE;
@@ -23,6 +26,7 @@ export function getVariantName(apiData: GetVariantResponse): string {
 }
 
 export function transformVariantToFormValue(apiData: GetVariantResponse): ProductVariantForm {
+  const mediaIds = orderVariantMediaIds(apiData.mediaIds, apiData.thumbnailMediaId);
   return {
     id: apiData.variantId,
     name: getVariantName(apiData),
@@ -33,6 +37,8 @@ export function transformVariantToFormValue(apiData: GetVariantResponse): Produc
       typeId: v.typeId,
       optionId: v.optionId,
     })),
+    mediaIds,
+    thumbnailMediaId: apiData.thumbnailMediaId ?? mediaIds[0] ?? null,
   };
 }
 

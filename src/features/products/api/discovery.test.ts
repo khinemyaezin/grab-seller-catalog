@@ -25,6 +25,7 @@ describe("catalog discovery", () => {
         "replace-product-descriptions": { href: "/catalog/products/{productId}/descriptions", templated: true },
         "update-sellable-product": { href: "/api/v1/workflows/update-sellable-product" },
         "update-product-variant": { href: "/api/v1/workflows/update-product-variant" },
+        "batch-variant-images": { href: "/catalog/products/{productId}/variants/{variantId}/images/batch", templated: true },
       },
     }, { headers: { "content-type": "application/hal+json" } })));
 
@@ -51,5 +52,7 @@ describe("catalog discovery", () => {
     expect(root.replaceProductDescriptions?.templated).toBe(true);
     expect(root.updateSellableProduct?.href).toBe("/api/v1/workflows/update-sellable-product");
     expect(root.updateProductVariant?.href).toBe("/api/v1/workflows/update-product-variant");
+    expect(root.batchVariantImages?.href).toBe("/catalog/products/{productId}/variants/{variantId}/images/batch");
+    expect(root.batchVariantImages?.templated).toBe(true);
   });
 });

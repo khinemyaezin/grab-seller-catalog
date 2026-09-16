@@ -20,4 +20,7 @@ export type ProductFilterFormValue = {
   size: number;
 };
 
-export type ProductVariantForm = Variant;
+export type ProductVariantForm = Variant & {
+  mediaIds: string[];
+  thumbnailMediaId?: string | null;
+};

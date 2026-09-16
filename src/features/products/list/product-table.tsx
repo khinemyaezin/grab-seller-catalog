@@ -26,6 +26,7 @@ type FeatureProduct = {
   status: string;
   slug: string;
   categoryName: string;
+  thumbnailUrl?: string | null;
   _links?: Record<string, HateoasLink>;
 };
 
@@ -43,6 +44,7 @@ function transformToProducts(data?: ProductSearchResponse): FeatureProduct[] {
     status: product.status,
     slug: product.slug,
     categoryName: product.categoryName,
+    thumbnailUrl: product.thumbnail?.url,
     _links: product._links
   })) ?? [];
 }
@@ -100,8 +102,16 @@ export default function ProductTable({ link, filter, onPageChange, onLifecycleEv
           products.map((product) => (
             <TableRow key={product.productId}>
               <TableCell>
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary">
-                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-md bg-secondary">
+                  {product.thumbnailUrl ? (
+                    <img
+                      src={product.thumbnailUrl}
+                      alt={product.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  )}
                 </div>
               </TableCell>
               <TableCell className="grid grid-rows-2 gap-1">

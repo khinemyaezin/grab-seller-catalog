@@ -25,6 +25,8 @@ import type {
   ReplaceProductMediaResponse,
   ReplaceProductDescriptionsRequest,
   ReplaceProductDescriptionsResponse,
+  BatchVariantImagesRequest,
+  BatchVariantImagesResponse,
 } from "@/features/products/types";
 import { api } from "@khinemyaezin/seller-api";
 import type { HateoasLink } from "@khinemyaezin/seller-api";
@@ -119,4 +121,11 @@ export const catalogService = {
 
   restoreProductVariant: (link: HateoasLink, headers?: Record<string, string>) =>
     api.followLink<void>(link, "POST", undefined, undefined, headers),
+
+  setVariantMedia: (
+    link: HateoasLink,
+    request: BatchVariantImagesRequest,
+    headers?: Record<string, string>,
+  ) =>
+    api.followLink<BatchVariantImagesResponse>(link, "POST", request, undefined, headers),
 };
