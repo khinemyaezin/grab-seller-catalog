@@ -59,6 +59,7 @@ export type CategoryLeaf = {
 
 export type ProductLifecycleEvent =
   | { type: "titleResolved"; title: string }
+  | { type: "productTitleResolved"; title: string }
   | { type: "created"; productId: string }
   | { type: "createMediaFailed"; productId: string }
   | { type: "createDescriptionFailed"; productId: string }

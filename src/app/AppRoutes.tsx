@@ -1,7 +1,7 @@
 import { SellerPlatform } from "@khinemyaezin/seller-contracts";
 import { HateoasLink } from "@khinemyaezin/seller-api";
 import { EntryLinkProvider, PlatformProvider, NotFoundPage, ExtensionRegistry, ExtensionProvider } from "@khinemyaezin/seller-ui";
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import ProductListPage from "@/features/products/list/product-list-page";
 import ProductCreatePage from "@/features/products/create/product-create-page";
 import ProductEditPage from "@/features/products/edit/product-edit-page";
@@ -28,6 +28,7 @@ export default function AppRoutes({
               <Route index element={<ProductListPage />} />
               <Route path="new" element={<ProductCreatePage/>}/>
               <Route path=":productId" element={<ProductEditPage />} />
+              <Route path=":productId/variants" element={<Navigate to=".." relative="path" />} />
               <Route path=":productId/variants/:variantId" element={<ProductVariantEditPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>

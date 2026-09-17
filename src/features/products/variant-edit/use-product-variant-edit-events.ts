@@ -16,6 +16,7 @@ export type ProductVariantEditEventMessages = {
 export function useProductVariantEditEvents(messages?: ProductVariantEditEventMessages) {
   const platform = usePlatform();
   const [title, setTitle] = useState<string | undefined>();
+  const [productTitle, setProductTitle] = useState<string | undefined>();
 
   const toast = useCallback(
     (type: "success" | "error" | "info" | "warning", message: string, description?: string) => {
@@ -34,6 +35,9 @@ export function useProductVariantEditEvents(messages?: ProductVariantEditEventMe
       switch (event.type) {
         case "titleResolved":
           setTitle(event.title);
+          break;
+        case "productTitleResolved":
+          setProductTitle(event.title);
           break;
         case "updated":
           toast("success", messages?.updated ?? "Variant updated");
@@ -93,6 +97,7 @@ export function useProductVariantEditEvents(messages?: ProductVariantEditEventMe
 
   return {
     title,
+    productTitle,
     handleEvent,
     toast,
   };
