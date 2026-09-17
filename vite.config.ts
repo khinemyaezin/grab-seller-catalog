@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
         name: "grab_seller_product",
         filename: "remoteEntry.js",
         manifest: true,
-        dts: {
+        dts: process.env.MF_DTS === "0" ? false : {
           generateTypes: {
             tsConfigPath: "./tsconfig.app.json",
             abortOnError: true,

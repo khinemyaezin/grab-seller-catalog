@@ -42,6 +42,12 @@ export default function ProductVariantEditView({
   });
 
   useEffect(() => {
+    if (product?.name) {
+      onLifecycleEvent?.({ type: "productTitleResolved", title: product.name });
+    }
+  }, [onLifecycleEvent, product?.name]);
+
+  useEffect(() => {
     if (seed?.name) {
       onLifecycleEvent?.({ type: "titleResolved", title: seed.name });
     }
