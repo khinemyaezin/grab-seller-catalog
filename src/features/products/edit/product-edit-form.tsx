@@ -7,7 +7,7 @@ import { useProductUpdateSubmit } from "./use-product-update-submit";
 import { ProductFormValue, ProductLifecycleEvent } from "@/features/products/types";
 import ProductEditVariation from "./product-edit-variation";
 import { PricingEditStandalone } from "@/features/products/ui/slots/pricing/pricing-edit-standalone";
-import { HateoasLink, resolveLink } from "@khinemyaezin/seller-api";
+import { HateoasLink } from "@khinemyaezin/seller-api";
 import { useContextBar, useResetAllSlots, useIsExtensionDirty } from "@khinemyaezin/seller-ui";
 import useProductNameWatch from "@/features/products/use-product-name-watch";
 import { InventoryEditStandalone } from "@/features/products/ui/slots/inventory/inventory-edit-standalone";
@@ -16,7 +16,6 @@ import { useMatrixSync } from "@/features/products/use-matrix-sync";
 export type ProductEditFormProps = {
     productId: string;
     seed: ProductFormValue;
-    status?: string;
     actions?: Record<string, HateoasLink>;
     onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
 };
@@ -24,7 +23,6 @@ export type ProductEditFormProps = {
 export default function ProductEditForm({
     productId,
     seed,
-    status,
     actions,
     onLifecycleEvent,
 }: ProductEditFormProps) {
@@ -43,7 +41,6 @@ export default function ProductEditForm({
             <ProductEditFormFields
                 productId={productId}
                 seed={seed}
-                status={status}
                 actions={actions}
                 onLifecycleEvent={onLifecycleEvent}
             />
@@ -54,7 +51,6 @@ export default function ProductEditForm({
 function ProductEditFormFields({
     productId,
     seed,
-    status,
     actions,
     onLifecycleEvent,
 }: ProductEditFormProps) {
@@ -103,7 +99,6 @@ function ProductEditFormFields({
         label: "Edit Product",
     });
 
-    const productPublishLink = resolveLink(actions, "publish-product");
     useMatrixSync();
 
     return (
@@ -119,13 +114,6 @@ function ProductEditFormFields({
                 <InventoryEditStandalone />
                 <ProductEditVariation />
             </form>
-            {/* <div className="flex w-full md:flex-1 flex-col gap-6">
-                <ProductStatus
-                    status={status}
-                    link={productPublishLink}
-                    onLifecycleEvent={onLifecycleEvent}
-                />
-            </div> */}
         </div>
     );
 }

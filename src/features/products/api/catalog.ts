@@ -27,6 +27,9 @@ import type {
   ReplaceProductDescriptionsResponse,
   BatchVariantImagesRequest,
   BatchVariantImagesResponse,
+  PublishProductToChannelRequest,
+  PublishProductToChannelResponse,
+  ProductPublicationResponse,
 } from "@/features/products/types";
 import { api } from "@khinemyaezin/seller-api";
 import type { HateoasLink } from "@khinemyaezin/seller-api";
@@ -69,6 +72,9 @@ export const catalogService = {
     api.followLink<ProductModerationResponse>(link, "POST", undefined, undefined, headers),
 
   publishProduct: (link: HateoasLink, headers?: Record<string, string>) =>
+    api.followLink<ProductModerationResponse>(link, "POST", undefined, undefined, headers),
+
+  suspendProduct: (link: HateoasLink, headers?: Record<string, string>) =>
     api.followLink<ProductModerationResponse>(link, "POST", undefined, undefined, headers),
 
   getCreateSellableProduct: (link: HateoasLink, headers?: Record<string, string>) =>
@@ -121,6 +127,20 @@ export const catalogService = {
 
   restoreProductVariant: (link: HateoasLink, headers?: Record<string, string>) =>
     api.followLink<void>(link, "POST", undefined, undefined, headers),
+
+  publishProductToChannel: (
+    link: HateoasLink,
+    request: PublishProductToChannelRequest,
+    headers?: Record<string, string>,
+  ) =>
+    api.followLink<PublishProductToChannelResponse>(link, "POST", request, undefined, headers),
+
+  unpublishProductFromChannel: (
+    link: HateoasLink,
+    request: { salesChannelId: string },
+    headers?: Record<string, string>,
+  ) =>
+    api.followLink<ProductPublicationResponse>(link, "POST", request, undefined, headers),
 
   setVariantMedia: (
     link: HateoasLink,

@@ -16,6 +16,8 @@ import type {
   ProductModerationResponse,
   DeleteProductResponse,
   ProductFilterFormValue,
+  PublishProductToChannelResponse,
+  ProductPublicationResponse,
 } from "@/features/products/types";
 import { resolveUrlTemplate } from "@khinemyaezin/seller-api";
 import { ProductSearchRequest } from "@/features/products/types/catalog.request";
@@ -175,4 +177,65 @@ export function useProductPublishMutation() {
     },
   });
 }
+
+export function useProductSuspendMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<ProductModerationResponse, Error, { link: HateoasLink }>({
+    mutationFn: ({ link }) => catalogService.suspendProduct(link),
+    onSuccess: (resp) => {
+      invalidateProductQueries(queryClient, resp.productId);
+    },
+  });
+}
+
+export function usePublishProductToChannelMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    PublishProductToChannelResponse,
+    Error,
+    { link: HateoasLink; productId: string; salesChannelId: string }
+  >({
+    mutationFn: ({ link, productId, salesChannelId }) =>
+      catalogService.publishProductToChannel(link, {
+        productId,
+        salesChannelId,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.setQueryData<GetFullProductResponse>(["product", variables.productId], (old) => {
+        if (!old) return old;
+        const exists = old.publications?.some((p) => p.salesChannelId === variables.salesChannelId);
+        const publications = exists
+          ? old.publications
+          : [...(old.publications ?? []), { salesChannelId: variables.salesChannelId }];
+        return { ...old, publications };
+      });
+      invalidateProductQueries(queryClient, variables.productId);
+    },
+  });
+}
+
+export function useUnpublishProductFromChannelMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ProductPublicationResponse,
+    Error,
+    { link: HateoasLink; productId: string; salesChannelId: string }
+  >({
+    mutationFn: ({ link, salesChannelId }) =>
+      catalogService.unpublishProductFromChannel(link, { salesChannelId }),
+    onSuccess: (_data, variables) => {
+      queryClient.setQueryData<GetFullProductResponse>(["product", variables.productId], (old) => {
+        if (!old) return old;
+        const publications = (old.publications ?? []).filter(
+          (p) => p.salesChannelId !== variables.salesChannelId,
+        );
+        return { ...old, publications };
+      });
+      invalidateProductQueries(queryClient, variables.productId);
+    },
+  });
+}
+
 

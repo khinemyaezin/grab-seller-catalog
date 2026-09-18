@@ -23,5 +23,6 @@ export async function fetchCatalogRoot(link: HateoasLink): Promise<CatalogRoot> 
     updateSellableProduct: resolveLink(response._links, "update-sellable-product"),
     updateProductVariant: resolveLink(response._links, "update-product-variant"),
     batchVariantImages: resolveLink(response._links, "batch-variant-images"),
+    publishProductToChannel: resolveLink(response._links, "publish-product-to-channel"),
   };
 }

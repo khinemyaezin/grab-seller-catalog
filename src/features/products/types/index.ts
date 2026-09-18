@@ -68,6 +68,10 @@ export type {
   CreateSellableProductResponse,
   UpdateSellableProductResponse,
   UpdateProductVariantResponse,
+  ProductPublication,
+  PublishProductToChannelRequest,
+  PublishProductToChannelResponse,
+  ProductPublicationResponse,
 } from "./catalog.response";
 
 // Form Values

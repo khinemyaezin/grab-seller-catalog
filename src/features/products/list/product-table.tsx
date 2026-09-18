@@ -18,7 +18,11 @@ import { Badge, Button } from "@khinemyaezin/seller-ui/components/index";
 import { DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenu } from "@khinemyaezin/seller-ui/components/dropdown-menu";
 import { hasLink, resolveLink } from "@khinemyaezin/seller-api";
 import { Ellipsis, ImageIcon } from "lucide-react";
-import { formatProductStatus, getProductStatusBadgeClass } from "@/features/products/ui/product-status";
+import { formatProductStatus } from "@/features/products/ui/product-status";
+import { useSalesChannelLink } from "@/features/products/api/sales-channel-link";
+import { useSalesChannels } from "@/features/products/api/use-sales-channels";
+import { isSellerFacingChannel, salesChannelLabel } from "@/features/products/lib/sales-channel-label";
+import type { ProductPublication } from "@/features/products/types";
 
 type FeatureProduct = {
   productId: string;
@@ -27,6 +31,7 @@ type FeatureProduct = {
   slug: string;
   categoryName: string;
   thumbnailUrl?: string | null;
+  publications?: ProductPublication[];
   _links?: Record<string, HateoasLink>;
 };
 
@@ -45,6 +50,7 @@ function transformToProducts(data?: ProductSearchResponse): FeatureProduct[] {
     slug: product.slug,
     categoryName: product.categoryName,
     thumbnailUrl: product.thumbnail?.url,
+    publications: product.publications,
     _links: product._links
   })) ?? [];
 }
@@ -54,6 +60,8 @@ export default function ProductTable({ link, filter, onPageChange, onLifecycleEv
   const deleteProductMutation = useProductDeleteMutation();
   const restoreProductMutation = useProductRestoreMutation();
   const products = useMemo(() => transformToProducts(data), [data]);
+  const salesChannelLink = useSalesChannelLink();
+  const { data: channels = [] } = useSalesChannels(salesChannelLink);
 
   const handleArchive = useCallback(
     (deleteLink: HateoasLink, name: string) => {
@@ -94,6 +102,7 @@ export default function ProductTable({ link, filter, onPageChange, onLifecycleEv
           <TableHead className="w-[48px]"></TableHead>
           <TableHead>Product</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Channels</TableHead>
           <TableHead></TableHead>
         </TableRow>
       </TableHeader>
@@ -127,6 +136,12 @@ export default function ProductTable({ link, filter, onPageChange, onLifecycleEv
                 <Badge variant="default">
                   {formatProductStatus(product.status)}
                 </Badge>
+              </TableCell>
+              <TableCell>
+                <PublishedChannelBadges
+                  publications={product.publications}
+                  channels={channels}
+                />
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
@@ -164,7 +179,7 @@ export default function ProductTable({ link, filter, onPageChange, onLifecycleEv
       {showPagination && (
         <TableFooter className="bg-transparent">
           <TableRow>
-            <TableCell colSpan={4} className="px-(--card-spacing)">
+            <TableCell colSpan={5} className="px-(--card-spacing)">
               <div className="flex w-full items-center justify-between py-3">
                 <span className="text-muted-foreground grow">
                   Showing {data?.page ? data.page.number * data.page.size + 1 : 0} - {data?.page ? data.page.number * data.page.size + products.length : 0} of {data?.page?.totalElements} products
@@ -183,6 +198,31 @@ export default function ProductTable({ link, filter, onPageChange, onLifecycleEv
         </TableFooter>
       )}
     </Table>
+  );
+}
+
+function PublishedChannelBadges({
+  publications,
+  channels,
+}: {
+  publications?: ProductPublication[];
+  channels: { salesChannelId: string; type: string }[];
+}) {
+  const labels = (publications ?? [])
+    .map((publication) => channels.find((channel) => channel.salesChannelId === publication.salesChannelId))
+    .filter((channel): channel is { salesChannelId: string; type: string } => !!channel && isSellerFacingChannel(channel.type))
+    .map((channel) => salesChannelLabel(channel.type));
+
+  if (labels.length === 0) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {labels.map((label) => (
+        <Badge key={label} variant="secondary">{label}</Badge>
+      ))}
+    </div>
   );
 }
 

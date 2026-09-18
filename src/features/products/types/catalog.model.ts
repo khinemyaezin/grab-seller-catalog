@@ -79,5 +79,10 @@ export type ProductLifecycleEvent =
   | { type: "publishFailed"; name?: string }
   | { type: "deleted"; name?: string }
   | { type: "deleteFailed"; name?: string }
+  | { type: "publish"; name?: string }
+  | { type: "publishedFailed"; name?: string }
+  | { type: "suspend"; name?: string }
+  | { type: "suspendedFailed"; name?: string }
+
 
 export type ProductStatus = | "DRAFT" | "ACTIVE" | "ARCHIVED" | "SUSPENDED";

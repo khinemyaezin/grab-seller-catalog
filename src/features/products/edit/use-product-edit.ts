@@ -16,5 +16,5 @@ export function useProductEdit({ productId }: UseProductEditProps) {
         [data],
     );
 
-    return { isLoading, isError, seed, status: data?.status, actions: data?._links };
+    return { isLoading, isError, seed, status: data?.status, actions: data?._links, publications: data?.publications };
 }
