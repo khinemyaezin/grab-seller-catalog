@@ -16,7 +16,6 @@ import type {
   ProductModerationResponse,
   DeleteProductResponse,
   ProductFilterFormValue,
-  PublishProductToChannelResponse,
   ProductPublicationResponse,
 } from "@/features/products/types";
 import { resolveUrlTemplate } from "@khinemyaezin/seller-api";
@@ -189,49 +188,31 @@ export function useProductSuspendMutation() {
   });
 }
 
-export function usePublishProductToChannelMutation() {
-  const queryClient = useQueryClient();
-  return useMutation<
-    PublishProductToChannelResponse,
-    Error,
-    { link: HateoasLink; productId: string; salesChannelId: string }
-  >({
-    mutationFn: ({ link, productId, salesChannelId }) =>
-      catalogService.publishProductToChannel(link, {
-        productId,
-        salesChannelId,
-        idempotencyKey: crypto.randomUUID(),
-      }),
-    onSuccess: (_data, variables) => {
-      queryClient.setQueryData<GetFullProductResponse>(["product", variables.productId], (old) => {
-        if (!old) return old;
-        const exists = old.publications?.some((p) => p.salesChannelId === variables.salesChannelId);
-        const publications = exists
-          ? old.publications
-          : [...(old.publications ?? []), { salesChannelId: variables.salesChannelId }];
-        return { ...old, publications };
-      });
-      invalidateProductQueries(queryClient, variables.productId);
-    },
-  });
-}
-
 export function useUnpublishProductFromChannelMutation() {
   const queryClient = useQueryClient();
   return useMutation<
     ProductPublicationResponse,
     Error,
-    { link: HateoasLink; productId: string; salesChannelId: string }
+    { link: HateoasLink; productId: string; variantId: string; salesChannelId: string }
   >({
-    mutationFn: ({ link, salesChannelId }) =>
-      catalogService.unpublishProductFromChannel(link, { salesChannelId }),
+    mutationFn: ({ link, variantId, salesChannelId }) =>
+      catalogService.unpublishProductFromChannel(link, { variantId, salesChannelId }),
     onSuccess: (_data, variables) => {
       queryClient.setQueryData<GetFullProductResponse>(["product", variables.productId], (old) => {
         if (!old) return old;
-        const publications = (old.publications ?? []).filter(
-          (p) => p.salesChannelId !== variables.salesChannelId,
-        );
-        return { ...old, publications };
+        return {
+          ...old,
+          variants: old.variants.map((variant) =>
+            variant.id !== variables.variantId
+              ? variant
+              : {
+                  ...variant,
+                  publications: (variant.publications ?? []).filter(
+                    (publication) => publication.salesChannelId !== variables.salesChannelId,
+                  ),
+                },
+          ),
+        };
       });
       invalidateProductQueries(queryClient, variables.productId);
     },

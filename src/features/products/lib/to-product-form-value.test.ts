@@ -29,6 +29,37 @@ function makeProduct(
 }
 
 describe("transformProductToFormValue", () => {
+  it("copies variant publications onto the form", () => {
+    const formValue = transformProductToFormValue(
+      makeProduct({
+        variants: [
+          {
+            id: "var-1",
+            sku: "TSHIRT-RED",
+            status: "ACTIVE",
+            matrixKey: "red",
+            publications: [{ salesChannelId: "web-1" }],
+            variations: [
+              { typeId: "t1", typeName: "Color", optionId: "o1", optionName: "Red" },
+            ],
+          },
+        ],
+        variantTypes: [
+          {
+            typeId: "t1",
+            typeName: "Color",
+            options: [{ optionId: "o1", optionName: "Red" }],
+          },
+        ],
+      }),
+    );
+
+    expect(formValue.product.publicationLines).toEqual([
+      { sku: "TSHIRT-RED", salesChannelId: "web-1" },
+    ]);
+    expect(formValue.product.variants[0]).not.toHaveProperty("publications");
+  });
+
   it("formats variant names with multiple options", () => {
     const apiData = makeProduct({
       variants: [
@@ -92,9 +123,13 @@ describe("transformProductToFormValue", () => {
     const formValue = transformProductToFormValue(apiData);
 
     expect(formValue.product.standaloneVariant).toEqual({
-      ...standalone,
+      id: "var-2",
+      sku: "MUG-1",
+      matrixKey: "",
+      variations: [],
       manageInventory: true,
     });
+    expect(formValue.product.publicationLines).toEqual([]);
     expect(formValue.variationTypes).toEqual([]);
   });
 

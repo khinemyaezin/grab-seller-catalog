@@ -19,7 +19,6 @@ export interface CatalogRoot {
   updateSellableProduct?: HateoasLink
   updateProductVariant?: HateoasLink
   batchVariantImages?: HateoasLink
-  publishProductToChannel?: HateoasLink
 }
 
 export type VariationMatrixResponseVariation = {
@@ -174,7 +173,7 @@ export interface GetFullProductResponse {
   sellerType: string;
   condition: string;
   offerEligible: boolean;
-  status: string;
+  status: | "DRAFT" | "ACTIVE" | "ARCHIVED" | "SUSPENDED";
   slug: string;
   featured: boolean;
   descriptions: ProductDescription[] | null;
@@ -188,6 +187,7 @@ export interface GetFullProductResponse {
     manageInventory?: boolean;
     mediaIds?: string[];
     thumbnailMediaId?: string | null;
+    publications?: ProductPublication[];
     variations: {
       optionId: string;
       optionName: string;
@@ -203,7 +203,6 @@ export interface GetFullProductResponse {
       optionName: string;
     }[];
   }[];
-  publications?: ProductPublication[];
 }
 
 export interface CategoryLeavesResult {
@@ -269,25 +268,17 @@ export type CreateSellableProductResponse = {
 
 export type UpdateSellableProductResponse = CreateSellableProductResponse;
 
-export type PublishProductToChannelRequest = {
-  productId: string;
+export type UnpublishProductFromChannelRequest = {
+  variantId: string;
   salesChannelId: string;
-  idempotencyKey?: string;
-};
-
-export type PublishProductToChannelResponse = {
-  workflowId: string;
-  status: string;
-  currentStep?: string | null;
-  productId?: string | null;
-  salesChannelId?: string | null;
-  errorMessage?: string | null;
-  _links?: Record<string, HateoasLink>;
 };
 
 export type ProductPublicationResponse = {
   productId: string;
-  publications: ProductPublication[];
+  publications: {
+    variantId: string;
+    salesChannelId: string;
+  }[];
   _links?: Record<string, HateoasLink>;
 };
 

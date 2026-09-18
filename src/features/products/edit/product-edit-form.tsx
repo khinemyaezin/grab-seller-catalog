@@ -7,7 +7,7 @@ import { useProductUpdateSubmit } from "./use-product-update-submit";
 import { ProductFormValue, ProductLifecycleEvent } from "@/features/products/types";
 import ProductEditVariation from "./product-edit-variation";
 import { PricingEditStandalone } from "@/features/products/ui/slots/pricing/pricing-edit-standalone";
-import { HateoasLink } from "@khinemyaezin/seller-api";
+import { hasLink, HateoasLink } from "@khinemyaezin/seller-api";
 import { useContextBar, useResetAllSlots, useIsExtensionDirty } from "@khinemyaezin/seller-ui";
 import useProductNameWatch from "@/features/products/use-product-name-watch";
 import { InventoryEditStandalone } from "@/features/products/ui/slots/inventory/inventory-edit-standalone";

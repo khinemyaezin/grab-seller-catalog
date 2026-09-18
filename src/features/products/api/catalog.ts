@@ -27,8 +27,7 @@ import type {
   ReplaceProductDescriptionsResponse,
   BatchVariantImagesRequest,
   BatchVariantImagesResponse,
-  PublishProductToChannelRequest,
-  PublishProductToChannelResponse,
+  UnpublishProductFromChannelRequest,
   ProductPublicationResponse,
 } from "@/features/products/types";
 import { api } from "@khinemyaezin/seller-api";
@@ -128,16 +127,9 @@ export const catalogService = {
   restoreProductVariant: (link: HateoasLink, headers?: Record<string, string>) =>
     api.followLink<void>(link, "POST", undefined, undefined, headers),
 
-  publishProductToChannel: (
-    link: HateoasLink,
-    request: PublishProductToChannelRequest,
-    headers?: Record<string, string>,
-  ) =>
-    api.followLink<PublishProductToChannelResponse>(link, "POST", request, undefined, headers),
-
   unpublishProductFromChannel: (
     link: HateoasLink,
-    request: { salesChannelId: string },
+    request: UnpublishProductFromChannelRequest,
     headers?: Record<string, string>,
   ) =>
     api.followLink<ProductPublicationResponse>(link, "POST", request, undefined, headers),

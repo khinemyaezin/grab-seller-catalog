@@ -8,12 +8,16 @@ import {
   useIsExtensionDirty,
   useValidateAllSlots,
 } from "@khinemyaezin/seller-ui";
-import type { HateoasLink } from "@khinemyaezin/seller-api";
-import { invalidateProductQueries } from "@/features/products/api/use-products";
+import { resolveLink, type HateoasLink } from "@khinemyaezin/seller-api";
+import {
+  invalidateProductQueries,
+  useUnpublishProductFromChannelMutation,
+} from "@/features/products/api/use-products";
 import { useUpdateSellableProductCommand } from "./use-product-update-command";
 import { isCatalogFormDirty } from "@/features/products/lib/product-form-dirty";
 import { determineUpdateIntent } from "@/features/products/lib/update-product-request";
 import { buildUpdateSellableProductRequest } from "@/features/products/lib/update-sellable-product-request";
+import { diffProductPublications } from "@/features/products/lib/diff-product-publications";
 import {
   isWorkflowChainIdle,
   runWorkflowChain,
@@ -57,6 +61,9 @@ function secondaryFailureEvent(stepId: string | undefined): ProductLifecycleEven
   if (stepId === "attachDescriptions") {
     return { type: "updateDescriptionFailed" };
   }
+  if (stepId === "unpublishChannels") {
+    return { type: "updateFailed" };
+  }
   return undefined;
 }
 
@@ -76,11 +83,14 @@ export function useProductUpdateSubmit({
     actions,
   });
   const { execute, reset: resetCommand } = useUpdateSellableProductCommand();
+  const unpublishMutation = useUnpublishProductFromChannelMutation();
+  const unpublishLink = resolveLink(actions, "unpublish-product-from-channel");
 
   const submit = useCallback(async () => {
     const catalogDirty = isCatalogFormDirty(dirtyFields, extensionDirty);
 
     let payload: UpdateSellableProductRequest | undefined;
+    let unpublishTargets: { variantId: string; salesChannelId: string }[] = [];
     if (catalogDirty) {
       const results = await validate();
       const errors = collectSlotFieldErrors(results);
@@ -97,11 +107,18 @@ export function useProductUpdateSubmit({
         results,
         PRODUCT_SLICES,
       ) as UpdateProductContributions;
+      const publicationDiff = diffProductPublications(seed, values);
+      unpublishTargets = publicationDiff.unpublish;
       payload = buildUpdateSellableProductRequest(
         productId,
         values,
         intent,
-        contributions,
+        {
+          ...contributions,
+          ...(publicationDiff.publicationLines.length > 0
+            ? { publicationLines: publicationDiff.publicationLines }
+            : {}),
+        },
       );
     }
 
@@ -120,6 +137,27 @@ export function useProductUpdateSubmit({
             return { status: "ok", patch: { entityUpdated: true } };
           },
           onFailure: "abort",
+        },
+        {
+          id: "unpublishChannels",
+          run: async () => {
+            if (unpublishTargets.length === 0) {
+              return { status: "skipped" };
+            }
+            if (!unpublishLink) {
+              return { status: "failed", error: new Error("Missing unpublish link") };
+            }
+            for (const target of unpublishTargets) {
+              await unpublishMutation.mutateAsync({
+                link: unpublishLink,
+                productId,
+                variantId: target.variantId,
+                salesChannelId: target.salesChannelId,
+              });
+            }
+            return { status: "ok" };
+          },
+          onFailure: onSecondaryFailure,
         },
         {
           id: "stageMedia",
@@ -176,6 +214,7 @@ export function useProductUpdateSubmit({
     onLifecycleEvent?.({ type: "updated" });
     resetCommand();
   }, [
+    actions,
     attach,
     attachDescriptions,
     dirtyFields,
@@ -186,7 +225,10 @@ export function useProductUpdateSubmit({
     productId,
     queryClient,
     resetCommand,
+    seed,
     stage,
+    unpublishLink,
+    unpublishMutation,
     validate,
   ]);
 

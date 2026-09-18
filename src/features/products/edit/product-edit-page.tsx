@@ -14,7 +14,7 @@ export default function EditProductPage() {
   useShellBreadcrumb(title);
 
   return (
-    <div className="container mx-auto max-w-5xl p-6">
+    <div className="container mx-auto max-w-2xl p-6">
       <QueryState
         isLoading={isLoading}
         isError={isError}

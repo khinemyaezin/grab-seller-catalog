@@ -38,6 +38,7 @@ export function transformProductToFormValue(apiData: GetFullProductResponse): Pr
     product: {
       name: apiData.name,
       category: apiData.category ?? null,
+      status: apiData.status,
       variants: apiData.variants.map((variant) => ({
         id: variant.id,
         name: getVariantName(variant, nameMap),
@@ -52,13 +53,22 @@ export function transformProductToFormValue(apiData: GetFullProductResponse): Pr
       })),
       standaloneVariant: standaloneVariant
         ? {
-            ...standaloneVariant,
+            id: standaloneVariant.id,
+            sku: standaloneVariant.sku,
+            matrixKey: standaloneVariant.matrixKey,
+            variations: standaloneVariant.variations,
             manageInventory: standaloneVariant.manageInventory === true,
           }
         : {
             sku: "",
             manageInventory: false,
           },
+      publicationLines: apiData.variants.flatMap((variant) =>
+        (variant.publications ?? []).map((publication) => ({
+          sku: variant.sku,
+          salesChannelId: publication.salesChannelId,
+        })),
+      ),
     },
     variationTypes: apiData.variantTypes.map((variantType) => ({
       uuid: variantType.typeId,

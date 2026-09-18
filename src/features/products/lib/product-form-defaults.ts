@@ -9,6 +9,7 @@ export const DEFAULT_PRODUCT_FORM_VALUE: ProductFormValue = {
       sku: "",
       manageInventory: false,
     },
+    publicationLines: [],
   },
   variationTypes: [],
   medias: [],

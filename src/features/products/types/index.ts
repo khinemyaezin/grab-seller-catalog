@@ -27,6 +27,7 @@ export type {
   UpdateSellableProductRequest,
   UpdateSellableProductInventoryLine,
   UpdateSellableProductPricingLine,
+  UpdateSellableProductPublicationLine,
   UpdateProductVariantPrice,
   UpdateProductVariantRequest,
   UPDATE_INTENT,
@@ -69,8 +70,7 @@ export type {
   UpdateSellableProductResponse,
   UpdateProductVariantResponse,
   ProductPublication,
-  PublishProductToChannelRequest,
-  PublishProductToChannelResponse,
+  UnpublishProductFromChannelRequest,
   ProductPublicationResponse,
 } from "./catalog.response";
 

@@ -26,7 +26,6 @@ describe("catalog discovery", () => {
         "update-sellable-product": { href: "/api/v1/workflows/update-sellable-product" },
         "update-product-variant": { href: "/api/v1/workflows/update-product-variant" },
         "batch-variant-images": { href: "/catalog/products/{productId}/variants/{variantId}/images/batch", templated: true },
-        "publish-product-to-channel": { href: "/api/v1/workflows/publish-product-to-channel" },
       },
     }, { headers: { "content-type": "application/hal+json" } })));
 
@@ -55,6 +54,6 @@ describe("catalog discovery", () => {
     expect(root.updateProductVariant?.href).toBe("/api/v1/workflows/update-product-variant");
     expect(root.batchVariantImages?.href).toBe("/catalog/products/{productId}/variants/{variantId}/images/batch");
     expect(root.batchVariantImages?.templated).toBe(true);
-    expect(root.publishProductToChannel?.href).toBe("/api/v1/workflows/publish-product-to-channel");
+    expect(root).not.toHaveProperty("publishProductToChannel");
   });
 });

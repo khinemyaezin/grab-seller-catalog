@@ -15,6 +15,7 @@ import { Controller, useFormContext, useWatch } from "react-hook-form";
 import { Checkbox } from "@khinemyaezin/seller-ui/components/checkbox";
 import { Field, FieldError } from "@khinemyaezin/seller-ui/components/field";
 import type { ProductFormValue, Variant } from "@/features/products/types";
+import { useRewritePublicationSku } from "@/features/products/lib/use-rewrite-publication-sku";
 
 type VariantTableProps = {
   onAllVariantsDeleted?: () => void;
@@ -31,6 +32,7 @@ type VariantColumnExtension = {
 export function VariantTable({ onAllVariantsDeleted, columns }: VariantTableProps) {
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
   const { control, setValue, getValues } = useFormContext<ProductFormValue>();
+  const rewritePublicationSku = useRewritePublicationSku();
   const variants = useWatch({
     control,
     name: "product.variants",
@@ -137,6 +139,11 @@ export function VariantTable({ onAllVariantsDeleted, columns }: VariantTableProp
                           aria-invalid={fieldState.invalid}
                           placeholder="Variant SKU"
                           className="w-full"
+                          onChange={(event) => {
+                            const previous = field.value;
+                            field.onChange(event);
+                            rewritePublicationSku(previous, event.target.value);
+                          }}
                         />
                         {fieldState.error && (
                           <FieldError>{fieldState.error?.message}</FieldError>

@@ -1,10 +1,13 @@
 import type { SlotValidationErrors } from "@khinemyaezin/seller-contracts";
+import type { UpdateSellableProductPublicationLine } from "./catalog.request";
 
 export type Product = {
   name: string;
+  status?: ProductStatus;
   category: Category | null;
   variants: Variant[];
   standaloneVariant: Partial<Variant>;
+  publicationLines?: UpdateSellableProductPublicationLine[];
 };
 
 export type Category = {
