@@ -63,7 +63,6 @@ describe("SalesChannel", () => {
 
     expect(screen.getByText("Website")).toBeInTheDocument();
     expect(screen.queryByText("Marketplace")).not.toBeInTheDocument();
-    expect(screen.getByText("Publish this listing to your channels.")).toBeInTheDocument();
   });
 
   it("does not list every channel when the standalone sku has no publications", () => {

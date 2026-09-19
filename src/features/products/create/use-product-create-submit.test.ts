@@ -12,8 +12,6 @@ const mockMergeContributions = vi.fn();
 const mockCollectSlotFieldErrors = vi.fn();
 const mockBuildCreateSellableProductRequest = vi.fn();
 const mockStage = vi.fn();
-const mockAttach = vi.fn();
-const mockAttachDescriptions = vi.fn();
 
 vi.mock("react-hook-form", () => ({
   useFormContext: () => ({ getValues: mockGetValues }),
@@ -58,11 +56,7 @@ vi.mock("@/features/products/use-workflow-awaiter", () => ({
 }));
 
 vi.mock("@/features/products/use-product-media-sync", () => ({
-  useProductMediaSync: () => ({ stage: mockStage, attach: mockAttach }),
-}));
-
-vi.mock("@/features/products/use-product-description-sync", () => ({
-  useProductDescriptionSync: () => ({ attach: mockAttachDescriptions }),
+  useProductMediaSync: () => ({ stage: mockStage }),
 }));
 
 const formValues = {
@@ -83,10 +77,12 @@ const formValues = {
 };
 
 const payload = {
-  product: { name: "Mug" },
+  product: { name: "Mug", status: "DRAFT" },
   variantTypes: [],
   pricingLines: [],
   inventoryLines: [],
+  medias: [{ storageKey: "staged/hero.jpg", contentType: "image/jpeg", rank: 0 }],
+  descriptions: [{ name: "overview", title: "Overview", description: "A handmade mug." }],
 };
 
 describe("useProductCreateSubmit", () => {
@@ -98,12 +94,10 @@ describe("useProductCreateSubmit", () => {
     mockBuildCreateSellableProductRequest.mockReturnValue(payload);
     mockExecute.mockResolvedValue({ productId: "prod-1" });
     mockStage.mockResolvedValue({ status: "synced" });
-    mockAttach.mockResolvedValue({ status: "synced" });
-    mockAttachDescriptions.mockResolvedValue({ status: "synced" });
     mockValidate.mockResolvedValue([{ valid: true, groupId: "g1", slotId: "s1" }]);
   });
 
-  it("stages before create and does not put medias on the command payload", async () => {
+  it("stages then starts one create workflow with listing on the payload", async () => {
     const onLifecycleEvent = vi.fn();
     const order: string[] = [];
     mockStage.mockImplementation(async () => {
@@ -114,14 +108,6 @@ describe("useProductCreateSubmit", () => {
       order.push("create");
       return { productId: "prod-1" };
     });
-    mockAttach.mockImplementation(async (productId: string) => {
-      order.push(`attach:${productId}`);
-      return { status: "synced" };
-    });
-    mockAttachDescriptions.mockImplementation(async (productId: string) => {
-      order.push(`descriptions:${productId}`);
-      return { status: "synced" };
-    });
     const { result } = renderHook(() =>
       useProductCreateSubmit({
         link: { href: "/workflows/create-sellable-product" },
@@ -131,14 +117,14 @@ describe("useProductCreateSubmit", () => {
 
     await result.current.submit();
 
-    expect(order).toEqual(["stage", "create", "attach:prod-1", "descriptions:prod-1"]);
+    expect(order).toEqual(["stage", "create"]);
     expect(mockBuildCreateSellableProductRequest).toHaveBeenCalledWith(
       formValues,
       { pricingLines: [], inventoryLines: [] },
     );
     expect(mockExecute).toHaveBeenCalledWith(payload);
-    expect(payload).not.toHaveProperty("medias");
-    expect(payload).not.toHaveProperty("descriptions");
+    expect(payload).toHaveProperty("medias");
+    expect(payload).toHaveProperty("descriptions");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "created", productId: "prod-1" });
     expect(mockInvalidateProductQueries).toHaveBeenCalledWith(mockQueryClient, "prod-1");
   });
@@ -175,44 +161,8 @@ describe("useProductCreateSubmit", () => {
 
     await expect(result.current.submit()).rejects.toThrow("Storage upload failed (403)");
     expect(mockExecute).not.toHaveBeenCalled();
-    expect(mockAttach).not.toHaveBeenCalled();
-    expect(mockAttachDescriptions).not.toHaveBeenCalled();
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "created", productId: "prod-1" });
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "createFailed" });
-  });
-
-  it("emits createMediaFailed and still invalidates when attach fails", async () => {
-    mockAttach.mockResolvedValue({ status: "failed", error: new Error("Storage upload failed (403)") });
-    const onLifecycleEvent = vi.fn();
-    const { result } = renderHook(() =>
-      useProductCreateSubmit({
-        link: { href: "/workflows/create-sellable-product" },
-        onLifecycleEvent,
-      }),
-    );
-
-    await result.current.submit();
-
-    expect(mockExecute).toHaveBeenCalled();
-    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "createMediaFailed", productId: "prod-1" });
-    expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "created", productId: "prod-1" });
-  });
-
-  it("emits createDescriptionFailed when description attach fails after a successful media attach", async () => {
-    mockAttachDescriptions.mockResolvedValue({ status: "failed", error: new Error("Description replace failed") });
-    const onLifecycleEvent = vi.fn();
-    const { result } = renderHook(() =>
-      useProductCreateSubmit({
-        link: { href: "/workflows/create-sellable-product" },
-        onLifecycleEvent,
-      }),
-    );
-
-    await result.current.submit();
-
-    expect(mockExecute).toHaveBeenCalled();
-    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "createDescriptionFailed", productId: "prod-1" });
-    expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "created", productId: "prod-1" });
   });
 
   it("emits createTimedOut when the command times out", async () => {
@@ -229,5 +179,34 @@ describe("useProductCreateSubmit", () => {
     await expect(result.current.submit()).rejects.toThrow(WorkflowTimeoutError);
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "createTimedOut" });
     expect(mockResetCommand).toHaveBeenCalled();
+  });
+
+  it("puts status and publicationLines on create and does not call a follow-up replace", async () => {
+    const activeValues = {
+      ...formValues,
+      product: {
+        ...formValues.product,
+        status: "ACTIVE",
+        publicationLines: [{ sku: "SKU-1", salesChannelId: "web-1" }],
+      },
+    };
+    mockGetValues.mockReturnValue(activeValues);
+    const onLifecycleEvent = vi.fn();
+    const { result } = renderHook(() =>
+      useProductCreateSubmit({
+        link: { href: "/workflows/create-sellable-product" },
+        onLifecycleEvent,
+      }),
+    );
+
+    await result.current.submit();
+
+    expect(mockBuildCreateSellableProductRequest).toHaveBeenCalledWith(
+      activeValues,
+      { pricingLines: [], inventoryLines: [] },
+    );
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(mockExecute).toHaveBeenCalledWith(payload);
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "created", productId: "prod-1" });
   });
 });

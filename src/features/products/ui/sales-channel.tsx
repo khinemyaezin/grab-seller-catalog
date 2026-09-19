@@ -15,6 +15,8 @@ import { publicationTargetSkus, unionChannelIds } from "@/features/products/lib/
 import { isSellerFacingChannel, salesChannelLabel } from "@/features/products/lib/sales-channel-label";
 import { VariantSalesChannelControl } from "@/features/products/ui/variant-sales-channel-control";
 import type { ProductFormValue } from "@/features/products/types";
+import { Item, ItemMedia, ItemContent, ItemTitle, ItemDescription } from "@khinemyaezin/seller-ui/components/item";
+import { InboxIcon, Settings2 } from "lucide-react";
 
 export function SalesChannel() {
   const { control } = useFormContext<ProductFormValue>();
@@ -42,17 +44,12 @@ export function SalesChannel() {
   });
   const selectedIds = new Set(unionChannelIds(publicationLines, targetSkus));
   const selected = rows.filter((channel) => selectedIds.has(channel.salesChannelId));
-  const canManage = status == null || status === "ACTIVE";
+  const canManage = status === "ACTIVE";
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Sales channels</CardTitle>
-        <CardDescription>
-          {isStandalone
-            ? "Publish this listing to your channels."
-            : "Variants inherit these unless you change them on the row."}
-        </CardDescription>
         <CardAction>
           <VariantSalesChannelControl
             skus={targetSkus}
@@ -66,11 +63,11 @@ export function SalesChannel() {
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size="icon-sm"
                 disabled={!canManage || targetSkus.length === 0}
                 aria-label={`Manage sales channels, ${count} selected`}
               >
-                Manage
+                <Settings2 />
               </Button>
             )}
           />
@@ -82,16 +79,18 @@ export function SalesChannel() {
             Not published to any sales channels.
           </p>
         ) : (
-          <ul className="grid gap-2">
+          <div className="grid gap-2">
             {selected.map((channel) => {
               const name = channel.name.trim() || salesChannelLabel(channel.type);
               return (
-                <li key={channel.salesChannelId} className="text-sm">
-                  {name}
-                </li>
+                <Item key={channel.salesChannelId} variant="muted" size="xs">
+                  <ItemContent>
+                    <ItemTitle>{name}</ItemTitle>
+                  </ItemContent>
+                </Item>
               );
             })}
-          </ul>
+          </div>
         )}
       </CardContent>
     </Card>

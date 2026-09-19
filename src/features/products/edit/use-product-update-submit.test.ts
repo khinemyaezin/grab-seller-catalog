@@ -14,8 +14,6 @@ const mockMergeContributions = vi.fn();
 const mockCollectSlotFieldErrors = vi.fn();
 const mockBuildUpdateSellableProductRequest = vi.fn();
 const mockStage = vi.fn();
-const mockAttach = vi.fn();
-const mockAttachDescriptions = vi.fn();
 const mockIsCatalogFormDirty = vi.fn();
 const mockExtensionDirty = false;
 const mockDiffProductPublications = vi.fn();
@@ -75,11 +73,7 @@ vi.mock("@/features/products/use-workflow-awaiter", () => ({
 }));
 
 vi.mock("@/features/products/use-product-media-sync", () => ({
-  useProductMediaSync: () => ({ stage: mockStage, attach: mockAttach }),
-}));
-
-vi.mock("@/features/products/use-product-description-sync", () => ({
-  useProductDescriptionSync: () => ({ attach: mockAttachDescriptions }),
+  useProductMediaSync: () => ({ stage: mockStage }),
 }));
 
 vi.mock("@/features/products/lib/product-form-dirty", () => ({
@@ -115,14 +109,30 @@ const seed: ProductFormValue = {
 
 const values: ProductFormValue = {
   ...seed,
+};
+
+const dirtyMediaValues: ProductFormValue = {
+  ...seed,
   medias: [
     seed.medias[0],
     {
       id: "new",
-      url: "blob:1",
+      url: "https://cdn/extra.jpg",
       contentType: "image/jpeg",
       rank: 1,
-      file: new File(["x"], "extra.jpg", { type: "image/jpeg" }),
+      storageKey: "merchants/m/staged/extra.jpg",
+    },
+  ],
+};
+
+const dirtyDescriptionValues: ProductFormValue = {
+  ...seed,
+  descriptions: [
+    {
+      id: "desc-1",
+      name: "overview",
+      title: "Overview",
+      description: "Updated copy.",
     },
   ],
 };
@@ -144,12 +154,11 @@ describe("useProductUpdateSubmit", () => {
     mockExecute.mockResolvedValue({ productId: "prod-1" });
     mockValidate.mockResolvedValue([{ valid: true }]);
     mockStage.mockResolvedValue({ status: "synced" });
-    mockAttach.mockResolvedValue({ status: "synced" });
-    mockAttachDescriptions.mockResolvedValue({ status: "synced" });
   });
 
-  it("skips the command when only the gallery is dirty", async () => {
+  it("starts the workflow with medias when only the gallery is dirty", async () => {
     mockIsCatalogFormDirty.mockReturnValue(false);
+    mockGetValues.mockReturnValue(dirtyMediaValues);
     const onLifecycleEvent = vi.fn();
 
     const { result } = renderHook(() =>
@@ -163,15 +172,35 @@ describe("useProductUpdateSubmit", () => {
     await result.current.submit();
 
     expect(mockValidate).not.toHaveBeenCalled();
-    expect(mockExecute).not.toHaveBeenCalled();
     expect(mockStage).toHaveBeenCalled();
-    expect(mockAttach).toHaveBeenCalledWith("prod-1");
-    expect(mockAttachDescriptions).toHaveBeenCalledWith("prod-1");
+    expect(mockExecute).toHaveBeenCalledWith(payload);
+    expect(mockBuildUpdateSellableProductRequest).toHaveBeenCalledWith(
+      "prod-1",
+      dirtyMediaValues,
+      "COLLAPSE_TO_STANDALONE",
+      {
+        medias: [
+          {
+            id: "keep",
+            storageKey: "merchants/m/products/prod-1/keep.jpg",
+            contentType: "image/jpeg",
+            rank: 0,
+          },
+          {
+            id: "new",
+            storageKey: "merchants/m/staged/extra.jpg",
+            contentType: "image/jpeg",
+            rank: 1,
+          },
+        ],
+      },
+    );
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
   });
 
-  it("runs the command then media when both are dirty", async () => {
+  it("stages then starts one update workflow when catalog and listing are dirty", async () => {
     mockIsCatalogFormDirty.mockReturnValue(true);
+    mockGetValues.mockReturnValue(dirtyMediaValues);
     const onLifecycleEvent = vi.fn();
     const order: string[] = [];
     mockExecute.mockImplementation(async () => {
@@ -180,14 +209,6 @@ describe("useProductUpdateSubmit", () => {
     });
     mockStage.mockImplementation(async () => {
       order.push("stage");
-      return { status: "synced" };
-    });
-    mockAttach.mockImplementation(async () => {
-      order.push("attach");
-      return { status: "synced" };
-    });
-    mockAttachDescriptions.mockImplementation(async () => {
-      order.push("descriptions");
       return { status: "synced" };
     });
 
@@ -201,9 +222,9 @@ describe("useProductUpdateSubmit", () => {
 
     await result.current.submit();
 
-    expect(order).toEqual(["command", "stage", "attach", "descriptions"]);
+    expect(order).toEqual(["stage", "command"]);
+    expect(mockExecute).toHaveBeenCalledTimes(1);
     expect(mockExecute).toHaveBeenCalledWith(payload);
-    expect(mockAttach).toHaveBeenCalledWith("prod-1");
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
   });
 
@@ -230,7 +251,7 @@ describe("useProductUpdateSubmit", () => {
     expect(mockStage).not.toHaveBeenCalled();
   });
 
-  it("does not throw when media fails after a successful command", async () => {
+  it("throws when staging fails before the workflow starts", async () => {
     mockIsCatalogFormDirty.mockReturnValue(true);
     mockStage.mockResolvedValue({ status: "failed", error: new Error("Storage upload failed") });
     const onLifecycleEvent = vi.fn();
@@ -243,35 +264,16 @@ describe("useProductUpdateSubmit", () => {
       }),
     );
 
-    await result.current.submit();
-
-    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateMediaFailed" });
-    expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
-  });
-
-  it("throws when media fails and catalog is clean", async () => {
-    mockIsCatalogFormDirty.mockReturnValue(false);
-    mockStage.mockResolvedValue({ status: "failed", error: new Error("Storage upload failed") });
-    const onLifecycleEvent = vi.fn();
-
-    const { result } = renderHook(() =>
-      useProductUpdateSubmit({
-        productId: "prod-1",
-        seed,
-        onLifecycleEvent,
-      }),
-    );
-
     await expect(result.current.submit()).rejects.toThrow("Storage upload failed");
+    expect(mockExecute).not.toHaveBeenCalled();
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateMediaFailed" });
     expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
   });
 
-  it("skips the command when only descriptions are dirty", async () => {
+  it("starts the workflow with descriptions when only copy is dirty", async () => {
     mockIsCatalogFormDirty.mockReturnValue(false);
+    mockGetValues.mockReturnValue(dirtyDescriptionValues);
     mockStage.mockResolvedValue({ status: "skipped" });
-    mockAttach.mockResolvedValue({ status: "skipped" });
-    mockAttachDescriptions.mockResolvedValue({ status: "synced" });
     const onLifecycleEvent = vi.fn();
 
     const { result } = renderHook(() =>
@@ -284,32 +286,23 @@ describe("useProductUpdateSubmit", () => {
 
     await result.current.submit();
 
-    expect(mockExecute).not.toHaveBeenCalled();
-    expect(mockAttachDescriptions).toHaveBeenCalledWith("prod-1");
-    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
-  });
-
-  it("throws when description attach fails and catalog is clean", async () => {
-    mockIsCatalogFormDirty.mockReturnValue(false);
-    mockStage.mockResolvedValue({ status: "skipped" });
-    mockAttach.mockResolvedValue({ status: "skipped" });
-    mockAttachDescriptions.mockResolvedValue({
-      status: "failed",
-      error: new Error("Description replace failed"),
-    });
-    const onLifecycleEvent = vi.fn();
-
-    const { result } = renderHook(() =>
-      useProductUpdateSubmit({
-        productId: "prod-1",
-        seed,
-        onLifecycleEvent,
-      }),
+    expect(mockExecute).toHaveBeenCalledWith(payload);
+    expect(mockBuildUpdateSellableProductRequest).toHaveBeenCalledWith(
+      "prod-1",
+      dirtyDescriptionValues,
+      "COLLAPSE_TO_STANDALONE",
+      {
+        descriptions: [
+          {
+            id: "desc-1",
+            name: "overview",
+            title: "Overview",
+            description: "Updated copy.",
+          },
+        ],
+      },
     );
-
-    await expect(result.current.submit()).rejects.toThrow("Description replace failed");
-    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateDescriptionFailed" });
-    expect(onLifecycleEvent).not.toHaveBeenCalledWith({ type: "updated" });
+    expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updated" });
   });
 
   it("emits updateTimedOut when the command times out", async () => {
@@ -388,5 +381,53 @@ describe("useProductUpdateSubmit", () => {
       },
     );
     expect(mockExecute).toHaveBeenCalled();
+  });
+
+  it("sends all current publication lines when activating a draft", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(true);
+    mockDiffProductPublications.mockReturnValue({
+      publicationLines: [{ sku: "SKU-1", salesChannelId: "mkt-1" }],
+      unpublish: [{ sku: "SKU-1", salesChannelId: "web-1" }],
+    });
+    mockMergeContributions.mockReturnValue({ pricingLines: [], inventoryLines: [] });
+    const activatingValues: ProductFormValue = {
+      ...values,
+      product: {
+        ...values.product,
+        status: "ACTIVE",
+        publicationLines: [
+          { sku: "SKU-1", salesChannelId: "web-1" },
+          { sku: "SKU-1", salesChannelId: "mkt-1" },
+        ],
+      },
+    };
+    mockGetValues.mockReturnValue(activatingValues);
+    const draftSeed: ProductFormValue = {
+      ...seed,
+      product: { ...seed.product, status: "DRAFT" },
+    };
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed: draftSeed,
+      }),
+    );
+
+    await result.current.submit();
+
+    expect(mockBuildUpdateSellableProductRequest).toHaveBeenCalledWith(
+      "prod-1",
+      activatingValues,
+      "COLLAPSE_TO_STANDALONE",
+      {
+        pricingLines: [],
+        inventoryLines: [],
+        publicationLines: [
+          { sku: "SKU-1", salesChannelId: "web-1" },
+          { sku: "SKU-1", salesChannelId: "mkt-1" },
+        ],
+      },
+    );
   });
 });
