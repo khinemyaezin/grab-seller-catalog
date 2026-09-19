@@ -112,4 +112,37 @@ describe("VariantSalesChannelControl", () => {
 
     expect(screen.getByTestId("custom-trigger")).toHaveTextContent("Channels: 1");
   });
+
+  it("applies a toggle to every sku when skus is provided", () => {
+    const matrixSeed: ProductFormValue = {
+      ...seed,
+      product: {
+        ...seed.product,
+        variants: [
+          ...seed.product.variants,
+          {
+            id: "var-2",
+            name: "Blue",
+            matrixKey: "blue",
+            sku: "SKU-2",
+            variations: [{ typeId: "t1", optionId: "o2" }],
+          },
+        ],
+      },
+    };
+
+    render(
+      <Harness seed={matrixSeed}>
+        <VariantSalesChannelControl skus={["SKU-1", "SKU-2"]} />
+      </Harness>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "1 channel" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Website" }));
+
+    expect(JSON.parse(screen.getByTestId("lines").textContent ?? "[]")).toEqual([
+      { sku: "SKU-1", salesChannelId: "web-1" },
+      { sku: "SKU-2", salesChannelId: "web-1" },
+    ]);
+  });
 });

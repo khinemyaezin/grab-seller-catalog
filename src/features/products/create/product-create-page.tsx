@@ -31,7 +31,7 @@ export default function NewProductPage({ }: ProductCreatePageProps) {
   }, [navigate, platform?.events]);
 
   return (
-    <div className="container mx-auto max-w-2xl p-6">
+    <div className="container mx-auto max-w-2xl lg:max-w-5xl p-6">
       <Header
         title="Add Product"
         description="Add a new product to your seller catalog."

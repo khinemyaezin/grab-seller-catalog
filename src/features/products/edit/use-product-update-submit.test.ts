@@ -18,7 +18,6 @@ const mockAttach = vi.fn();
 const mockAttachDescriptions = vi.fn();
 const mockIsCatalogFormDirty = vi.fn();
 const mockExtensionDirty = false;
-const mockUnpublishMutate = vi.fn();
 const mockDiffProductPublications = vi.fn();
 
 vi.mock("react-hook-form", () => ({
@@ -48,9 +47,6 @@ vi.mock("@khinemyaezin/seller-contracts", () => ({
 
 vi.mock("@/features/products/api/use-products", () => ({
   invalidateProductQueries: (...args: unknown[]) => mockInvalidateProductQueries(...args),
-  useUnpublishProductFromChannelMutation: () => ({
-    mutateAsync: mockUnpublishMutate,
-  }),
 }));
 
 vi.mock("@/features/products/lib/update-sellable-product-request", () => ({
@@ -60,13 +56,6 @@ vi.mock("@/features/products/lib/update-sellable-product-request", () => ({
 
 vi.mock("@/features/products/lib/diff-product-publications", () => ({
   diffProductPublications: (...args: unknown[]) => mockDiffProductPublications(...args),
-}));
-
-vi.mock("@khinemyaezin/seller-api", () => ({
-  resolveLink: (_links: unknown, rel: string) =>
-    rel === "unpublish-product-from-channel"
-      ? { href: "/catalog/products/prod-1/channels/unpublish" }
-      : undefined,
 }));
 
 vi.mock("@/features/products/lib/update-product-request", () => ({
@@ -152,7 +141,6 @@ describe("useProductUpdateSubmit", () => {
     mockMergeContributions.mockReturnValue({ pricingLines: [], inventoryLines: [] });
     mockBuildUpdateSellableProductRequest.mockReturnValue(payload);
     mockDiffProductPublications.mockReturnValue({ publicationLines: [], unpublish: [] });
-    mockUnpublishMutate.mockResolvedValue({});
     mockExecute.mockResolvedValue({ productId: "prod-1" });
     mockValidate.mockResolvedValue([{ valid: true }]);
     mockStage.mockResolvedValue({ status: "synced" });
@@ -370,47 +358,35 @@ describe("useProductUpdateSubmit", () => {
         publicationLines: [{ sku: "SKU-1", salesChannelId: "mkt-1" }],
       },
     );
-    expect(mockUnpublishMutate).not.toHaveBeenCalled();
   });
 
-  it("unpublishes removed variant channels after the update command", async () => {
+  it("passes removed channels as unpublishLines on the update payload", async () => {
     mockIsCatalogFormDirty.mockReturnValue(true);
     mockDiffProductPublications.mockReturnValue({
       publicationLines: [],
-      unpublish: [{ variantId: "var-1", salesChannelId: "web-1" }],
+      unpublish: [{ sku: "SKU-1", salesChannelId: "web-1" }],
     });
-    const order: string[] = [];
-    mockExecute.mockImplementation(async () => {
-      order.push("command");
-      return { productId: "prod-1" };
-    });
-    mockUnpublishMutate.mockImplementation(async () => {
-      order.push("unpublish");
-    });
-    mockStage.mockImplementation(async () => {
-      order.push("stage");
-      return { status: "synced" };
-    });
+    mockMergeContributions.mockReturnValue({ pricingLines: [], inventoryLines: [] });
 
     const { result } = renderHook(() =>
       useProductUpdateSubmit({
         productId: "prod-1",
         seed,
-        actions: {
-          "unpublish-product-from-channel": { href: "/catalog/products/prod-1/channels/unpublish" },
-        },
       }),
     );
 
     await result.current.submit();
 
-    expect(order[0]).toBe("command");
-    expect(order[1]).toBe("unpublish");
-    expect(mockUnpublishMutate).toHaveBeenCalledWith({
-      link: { href: "/catalog/products/prod-1/channels/unpublish" },
-      productId: "prod-1",
-      variantId: "var-1",
-      salesChannelId: "web-1",
-    });
+    expect(mockBuildUpdateSellableProductRequest).toHaveBeenCalledWith(
+      "prod-1",
+      values,
+      "COLLAPSE_TO_STANDALONE",
+      {
+        pricingLines: [],
+        inventoryLines: [],
+        unpublishLines: [{ sku: "SKU-1", salesChannelId: "web-1" }],
+      },
+    );
+    expect(mockExecute).toHaveBeenCalled();
   });
 });

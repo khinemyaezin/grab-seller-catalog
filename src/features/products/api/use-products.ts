@@ -188,35 +188,4 @@ export function useProductSuspendMutation() {
   });
 }
 
-export function useUnpublishProductFromChannelMutation() {
-  const queryClient = useQueryClient();
-  return useMutation<
-    ProductPublicationResponse,
-    Error,
-    { link: HateoasLink; productId: string; variantId: string; salesChannelId: string }
-  >({
-    mutationFn: ({ link, variantId, salesChannelId }) =>
-      catalogService.unpublishProductFromChannel(link, { variantId, salesChannelId }),
-    onSuccess: (_data, variables) => {
-      queryClient.setQueryData<GetFullProductResponse>(["product", variables.productId], (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          variants: old.variants.map((variant) =>
-            variant.id !== variables.variantId
-              ? variant
-              : {
-                  ...variant,
-                  publications: (variant.publications ?? []).filter(
-                    (publication) => publication.salesChannelId !== variables.salesChannelId,
-                  ),
-                },
-          ),
-        };
-      });
-      invalidateProductQueries(queryClient, variables.productId);
-    },
-  });
-}
-
 

@@ -2,28 +2,15 @@ import type {
   ProductFormValue,
   UpdateSellableProductPublicationLine,
 } from "@/features/products/types";
-import { isStandaloneProductForm } from "./is-standalone-product-form";
-
-export type UnpublishProductTarget = {
-  variantId: string;
-  salesChannelId: string;
-};
+import { publicationTargetSkus } from "./publication-lines";
 
 export type ProductPublicationDiff = {
   publicationLines: UpdateSellableProductPublicationLine[];
-  unpublish: UnpublishProductTarget[];
+  unpublish: UpdateSellableProductPublicationLine[];
 };
 
 function lineKey(line: UpdateSellableProductPublicationLine): string {
   return `${line.sku}\0${line.salesChannelId}`;
-}
-
-function seedVariantIdForSku(seed: ProductFormValue, sku: string): string | undefined {
-  if (isStandaloneProductForm(seed.variationTypes)) {
-    const standalone = seed.product.standaloneVariant;
-    return standalone.sku === sku ? standalone.id : undefined;
-  }
-  return seed.product.variants.find((variant) => variant.sku === sku)?.id;
 }
 
 export function diffProductPublications(
@@ -36,18 +23,10 @@ export function diffProductPublications(
   const currentKeys = new Set(currentLines.map(lineKey));
 
   const publicationLines = currentLines.filter((line) => !seedKeys.has(lineKey(line)));
-  const unpublish: UnpublishProductTarget[] = [];
-
-  for (const line of seedLines) {
-    if (currentKeys.has(lineKey(line))) {
-      continue;
-    }
-    const variantId = seedVariantIdForSku(seed, line.sku);
-    if (!variantId) {
-      continue;
-    }
-    unpublish.push({ variantId, salesChannelId: line.salesChannelId });
-  }
+  const currentSkus = new Set(publicationTargetSkus(values));
+  const unpublish = seedLines.filter(
+    (line) => !currentKeys.has(lineKey(line)) && currentSkus.has(line.sku),
+  );
 
   return { publicationLines, unpublish };
 }

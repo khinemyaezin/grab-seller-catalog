@@ -20,10 +20,18 @@ import {
 import { useSalesChannelLink } from "@/features/products/api/sales-channel-link";
 import { useSalesChannels } from "@/features/products/api/use-sales-channels";
 import { isSellerFacingChannel, salesChannelLabel } from "@/features/products/lib/sales-channel-label";
+import {
+  channelPublishedOnAllSkus,
+  togglePublicationChannelForSkus,
+  unionChannelIds,
+} from "@/features/products/lib/publication-lines";
 import type { ProductFormValue, UpdateSellableProductPublicationLine } from "@/features/products/types";
 
 export type VariantSalesChannelControlProps = {
-  sku: string;
+  sku?: string;
+  skus?: string[];
+  disabled?: boolean;
+  description?: string;
   trigger?: (count: number) => ReactNode;
 };
 
@@ -31,7 +39,21 @@ function asPublicationLines(value: unknown): UpdateSellableProductPublicationLin
   return Array.isArray(value) ? value : [];
 }
 
-export function VariantSalesChannelControl({ sku, trigger }: VariantSalesChannelControlProps) {
+function resolveSkus(sku: string | undefined, skus: string[] | undefined): string[] {
+  if (skus) {
+    return skus.map((value) => value.trim()).filter(Boolean);
+  }
+  const trimmed = sku?.trim() ?? "";
+  return trimmed ? [trimmed] : [];
+}
+
+export function VariantSalesChannelControl({
+  sku,
+  skus,
+  disabled = false,
+  description,
+  trigger,
+}: VariantSalesChannelControlProps) {
   const { control, setValue } = useFormContext<ProductFormValue>();
   const publicationLines = asPublicationLines(
     useWatch({ control, name: "product.publicationLines" }),
@@ -45,24 +67,24 @@ export function VariantSalesChannelControl({ sku, trigger }: VariantSalesChannel
     return null;
   }
 
-  const publishedIds = new Set(
-    publicationLines
-      .filter((line) => line.sku === sku)
-      .map((line) => line.salesChannelId),
-  );
+  const targetSkus = resolveSkus(sku, skus);
+  const publishedIds = new Set(unionChannelIds(publicationLines, targetSkus));
   const count = rows.filter((channel) => publishedIds.has(channel.salesChannelId)).length;
-  const canToggle = sku.trim().length > 0;
+  const canToggle = !disabled && targetSkus.length > 0;
+  const dialogDescription = description
+    ?? (targetSkus.length > 1
+      ? "Publish these variants to your channels."
+      : "Publish this variant to your channels.");
 
   const toggle = (channelId: string, currentlyPublished: boolean) => {
     if (!canToggle) {
       return;
     }
-    const next = currentlyPublished
-      ? publicationLines.filter(
-          (line) => !(line.sku === sku && line.salesChannelId === channelId),
-        )
-      : [...publicationLines, { sku, salesChannelId: channelId }];
-    setValue("product.publicationLines", next, { shouldDirty: true, shouldTouch: true });
+    setValue(
+      "product.publicationLines",
+      togglePublicationChannelForSkus(publicationLines, targetSkus, channelId, currentlyPublished),
+      { shouldDirty: true, shouldTouch: true },
+    );
   };
 
   return (
@@ -84,12 +106,16 @@ export function VariantSalesChannelControl({ sku, trigger }: VariantSalesChannel
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Sales channels</DialogTitle>
-          <DialogDescription>Publish this variant to your channels.</DialogDescription>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         <FieldGroup className="gap-0">
           {rows.map((channel, index) => {
-            const inputId = `channel-${sku || "none"}-${channel.salesChannelId}`;
-            const published = publishedIds.has(channel.salesChannelId);
+            const inputId = `channel-${targetSkus.join("-") || "none"}-${channel.salesChannelId}`;
+            const published = channelPublishedOnAllSkus(
+              publicationLines,
+              targetSkus,
+              channel.salesChannelId,
+            );
             const name = channel.name.trim() || salesChannelLabel(channel.type);
             return (
               <div key={channel.salesChannelId}>

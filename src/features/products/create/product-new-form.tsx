@@ -12,6 +12,7 @@ import ProductMediaFieldSet from "@/features/products/ui/product-media-fieldset"
 import ProductNewVariation from "./product-new-variation";
 import { DEFAULT_PRODUCT_FORM_VALUE } from "@/features/products/lib/product-form-defaults";
 import { useMatrixSync } from "@/features/products/use-matrix-sync";
+import { SalesChannel } from "@/features/products/ui/sales-channel";
 
 export type ProductNewFormProps = {
   link: HateoasLink;
@@ -76,9 +77,9 @@ function ProductNewFormContent({ link, onLifecycleEvent }: ProductNewFormProps) 
   });
 
   return (
-    <form onSubmit={handleSubmit(submit)}>
-      <div className="flex flex-col gap-6">
-        <Card className="flex-1 w-full">
+    <form onSubmit={handleSubmit(submit)} className="w-full flex flex-wrap gap-6 items-start justify-center">
+      <div className="w-full max-w-2xl grid gap-6">
+        <Card>
           <CardContent className="flex flex-col gap-6">
             <ProductBasicFieldSet />
             <ProductMediaFieldSet />
@@ -88,6 +89,9 @@ function ProductNewFormContent({ link, onLifecycleEvent }: ProductNewFormProps) 
         <InventoryStandalone />
         <ProductNewVariation />
       </div>
+      <aside className="flex-1 min-w-70 max-w-2xl grid gap-6">
+        <SalesChannel />
+      </aside>
     </form>
   );
 }

@@ -48,7 +48,7 @@ describe("diffProductPublications", () => {
     });
   });
 
-  it("returns unpublish targets from the saved variant id", () => {
+  it("returns unpublish lines from the saved sku and channel", () => {
     const seed = matrixForm();
     const values = matrixForm({
       publicationLines: [],
@@ -56,7 +56,7 @@ describe("diffProductPublications", () => {
 
     expect(diffProductPublications(seed, values)).toEqual({
       publicationLines: [],
-      unpublish: [{ variantId: "var-1", salesChannelId: "web-1" }],
+      unpublish: [{ sku: "SKU-1", salesChannelId: "web-1" }],
     });
   });
 
@@ -107,7 +107,56 @@ describe("diffProductPublications", () => {
 
     expect(diffProductPublications(seed, values)).toEqual({
       publicationLines: [{ sku: "MUG-1", salesChannelId: "mkt-1" }],
-      unpublish: [{ variantId: "var-2", salesChannelId: "web-1" }],
+      unpublish: [{ sku: "MUG-1", salesChannelId: "web-1" }],
+    });
+  });
+
+  it("does not unpublish a standalone sku after conversion to matrix variants", () => {
+    const seed: ProductFormValue = {
+      ...DEFAULT_PRODUCT_FORM_VALUE,
+      product: {
+        name: "Shirt",
+        category: { id: "cat-1", name: "Cat" },
+        variants: [],
+        standaloneVariant: {
+          id: "var-0",
+          sku: "SKU-STANDALONE",
+        },
+        publicationLines: [
+          { sku: "SKU-STANDALONE", salesChannelId: "web-1" },
+          { sku: "SKU-STANDALONE", salesChannelId: "mkt-1" },
+        ],
+      },
+    };
+    const values = matrixForm({
+      variants: [
+        {
+          name: "M",
+          matrixKey: "m",
+          sku: "SKU-M",
+          variations: [{ typeId: "t1", optionId: "o1" }],
+        },
+        {
+          name: "L",
+          matrixKey: "l",
+          sku: "SKU-L",
+          variations: [{ typeId: "t1", optionId: "o2" }],
+        },
+      ],
+      publicationLines: [
+        { sku: "SKU-M", salesChannelId: "web-1" },
+        { sku: "SKU-L", salesChannelId: "web-1" },
+        { sku: "SKU-L", salesChannelId: "mkt-1" },
+      ],
+    });
+
+    expect(diffProductPublications(seed, values)).toEqual({
+      publicationLines: [
+        { sku: "SKU-M", salesChannelId: "web-1" },
+        { sku: "SKU-L", salesChannelId: "web-1" },
+        { sku: "SKU-L", salesChannelId: "mkt-1" },
+      ],
+      unpublish: [],
     });
   });
 });

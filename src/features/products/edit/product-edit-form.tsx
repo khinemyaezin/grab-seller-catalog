@@ -7,10 +7,11 @@ import { useProductUpdateSubmit } from "./use-product-update-submit";
 import { ProductFormValue, ProductLifecycleEvent } from "@/features/products/types";
 import ProductEditVariation from "./product-edit-variation";
 import { PricingEditStandalone } from "@/features/products/ui/slots/pricing/pricing-edit-standalone";
-import { hasLink, HateoasLink } from "@khinemyaezin/seller-api";
+import { HateoasLink } from "@khinemyaezin/seller-api";
 import { useContextBar, useResetAllSlots, useIsExtensionDirty } from "@khinemyaezin/seller-ui";
 import useProductNameWatch from "@/features/products/use-product-name-watch";
 import { InventoryEditStandalone } from "@/features/products/ui/slots/inventory/inventory-edit-standalone";
+import { SalesChannel } from "@/features/products/ui/sales-channel";
 import { useMatrixSync } from "@/features/products/use-matrix-sync";
 
 export type ProductEditFormProps = {
@@ -102,8 +103,8 @@ function ProductEditFormFields({
     useMatrixSync();
 
     return (
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-            <form onSubmit={handleSubmit(submit)} className="w-full grid gap-6">
+        <form onSubmit={handleSubmit(submit)} className="w-full flex flex-wrap gap-6 items-start justify-center">
+            <div className="w-full max-w-2xl grid gap-6">
                 <Card>
                     <CardContent className="flex flex-col gap-6">
                         <ProductBasicFieldSet />
@@ -113,7 +114,10 @@ function ProductEditFormFields({
                 <PricingEditStandalone />
                 <InventoryEditStandalone />
                 <ProductEditVariation />
-            </form>
-        </div>
+            </div>
+            <aside className="flex-1 min-w-70 max-w-2xl grid gap-6">
+                <SalesChannel />
+            </aside>
+        </form>
     );
 }
