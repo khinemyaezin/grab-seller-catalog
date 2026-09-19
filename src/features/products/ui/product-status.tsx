@@ -1,5 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@khinemyaezin/seller-ui/components/card";
-import { NativeSelect, NativeSelectOption } from "@khinemyaezin/seller-ui/components/native-select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+} from "@khinemyaezin/seller-ui/components/select";
 import { useFormContext } from "react-hook-form";
 import type { ProductFormValue, ProductStatus as ProductStatusValue } from "@/features/products/types";
 
@@ -15,9 +20,9 @@ export function formatProductStatus(status: string): string {
 export function getProductStatusDescription(status: string): string {
     switch (status) {
         case "DRAFT":
-            return "This product is hidden from all sales channels.";
+            return "Not visible on selected sales channels or markets";
         case "ACTIVE":
-            return "This product is visible to customers.";
+            return "Sell via selected sales channels and markets";
         case "ARCHIVED":
             return "This product is archived and hidden from customers.";
         case "SUSPENDED":
@@ -46,8 +51,8 @@ function isLockedStatus(status: string): status is "ARCHIVED" | "SUSPENDED" {
 }
 
 export function ProductStatus() {
-    const { register, watch } = useFormContext<ProductFormValue>();
-    const status = (watch("product.status") ?? "DRAFT").toUpperCase();
+    const { setValue, watch } = useFormContext<ProductFormValue>();
+    const status = (watch("product.status") ?? "DRAFT").toUpperCase() as ProductStatusValue;
     const locked = isLockedStatus(status);
     const cannotDraft = status === "ACTIVE";
     const options: ProductStatusValue[] = locked
@@ -60,22 +65,33 @@ export function ProductStatus() {
                 <CardTitle>Status</CardTitle>
             </CardHeader>
             <CardContent>
-                <NativeSelect
-                    className="w-full"
-                    aria-label="Status"
+                <Select
+                    value={status}
                     disabled={locked}
-                    {...register("product.status")}
+                    onValueChange={(next) =>
+                        setValue("product.status", next as ProductStatusValue, { shouldDirty: true })
+                    }
                 >
-                    {options.map((value) => (
-                        <NativeSelectOption
-                            key={value}
-                            value={value}
-                            disabled={value === "DRAFT" && cannotDraft}
-                        >
-                            {formatProductStatus(value)}
-                        </NativeSelectOption>
-                    ))}
-                </NativeSelect>
+                    <SelectTrigger className="w-full" aria-label="Status">
+                        {formatProductStatus(status)}
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="w-(--radix-select-trigger-width)">
+                        {options.map((value) => (
+                            <SelectItem
+                                key={value}
+                                value={value}
+                                disabled={value === "DRAFT" && cannotDraft}
+                            >
+                                <span className="flex flex-col gap-0.5 text-left p-1">
+                                    <span className="font-medium">{formatProductStatus(value)}</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {getProductStatusDescription(value)}
+                                    </span>
+                                </span>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </CardContent>
         </Card>
     );

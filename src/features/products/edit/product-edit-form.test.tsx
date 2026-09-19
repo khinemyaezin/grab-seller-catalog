@@ -74,7 +74,6 @@ describe("ProductEditForm", () => {
 
     const status = screen.getByLabelText("Status");
     expect(status.closest("aside")).not.toBeNull();
-    expect(status).toHaveValue("ACTIVE");
-    expect(screen.getByText("sales-channel-rail")).toBeInTheDocument();
+    expect(status).toHaveTextContent("Active"); expect(screen.getByText("sales-channel-rail")).toBeInTheDocument();
   });
 });

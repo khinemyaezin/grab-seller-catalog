@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { FormProvider, useForm } from "react-hook-form";
 import type { ReactNode } from "react";
 import { ProductStatus } from "./product-status";
@@ -17,6 +17,10 @@ function Harness({
   return <FormProvider {...form}>{children}</FormProvider>;
 }
 
+function openStatusPicker() {
+  fireEvent.click(screen.getByRole("combobox", { name: "Status" }));
+}
+
 describe("ProductStatus", () => {
   afterEach(() => {
     cleanup();
@@ -29,10 +33,16 @@ describe("ProductStatus", () => {
       </Harness>,
     );
 
-    const select = screen.getByLabelText("Status");
-    expect(select).toHaveValue("DRAFT");
-    expect(screen.getByRole("option", { name: "Draft" })).toBeEnabled();
-    expect(screen.getByRole("option", { name: "Active" })).toBeEnabled();
+    expect(screen.getByRole("combobox", { name: "Status" })).toHaveTextContent("Draft");
+    openStatusPicker();
+    expect(screen.getByRole("option", { name: /Draft/ })).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("option", { name: /Active/ })).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("option", { name: /Draft/ })).toHaveTextContent(
+      "Not visible on selected sales channels or markets",
+    );
+    expect(screen.getByRole("option", { name: /Active/ })).toHaveTextContent(
+      "Sell via selected sales channels and markets",
+    );
   });
 
   it("shows the seeded Active status and disables Draft", () => {
@@ -47,8 +57,9 @@ describe("ProductStatus", () => {
       </Harness>,
     );
 
-    expect(screen.getByLabelText("Status")).toHaveValue("ACTIVE");
-    expect(screen.getByRole("option", { name: "Draft" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Status" })).toHaveTextContent("Active");
+    openStatusPicker();
+    expect(screen.getByRole("option", { name: /Draft/ })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("shows archived status as read-only", () => {
@@ -63,8 +74,8 @@ describe("ProductStatus", () => {
       </Harness>,
     );
 
-    expect(screen.getByLabelText("Status")).toBeDisabled();
-    expect(screen.getByLabelText("Status")).toHaveValue("ARCHIVED");
-    expect(screen.getByRole("option", { name: "Archived" })).toBeInTheDocument();
+    const trigger = screen.getByRole("combobox", { name: "Status" });
+    expect(trigger).toBeDisabled();
+    expect(trigger).toHaveTextContent("Archived");
   });
 });

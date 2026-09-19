@@ -70,6 +70,6 @@ describe("ProductNewForm", () => {
 
     const status = screen.getByLabelText("Status");
     expect(status.closest("aside")).not.toBeNull();
-    expect(status).toHaveValue("DRAFT");
+    + expect(status).toHaveTextContent("Draft");
   });
 });
