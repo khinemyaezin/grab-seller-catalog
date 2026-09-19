@@ -49,8 +49,12 @@ export function authorizeStagedUpload(
   return catalogService.createProductMediaUpload(link, metadata);
 }
 
-function replacePayload(items: ProductMediaFormItem[]): ReplaceProductMediaRequest["medias"] {
+export function toReplaceMediaPayload(items: ProductMediaFormItem[]): ReplaceProductMediaRequest["medias"] {
   return formatMediaReplacements(items);
+}
+
+function replacePayload(items: ProductMediaFormItem[]): ReplaceProductMediaRequest["medias"] {
+  return toReplaceMediaPayload(items);
 }
 
 export async function stageProductMedia({

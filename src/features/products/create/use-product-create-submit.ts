@@ -16,7 +16,6 @@ import type {
   ProductFormValue,
   ProductLifecycleEvent,
 } from "@/features/products/types";
-import { useProductDescriptionSync } from "@/features/products/use-product-description-sync";
 import { useProductMediaSync } from "@/features/products/use-product-media-sync";
 import { WorkflowTimeoutError } from "@/features/products/use-workflow-awaiter";
 
@@ -46,8 +45,7 @@ export function useProductCreateSubmit({
   const { getValues } = useFormContext<ProductFormValue>();
   const { validate } = useValidateAllSlots();
   const { execute, reset: resetCommand } = useCreateSellableProductCommand(link);
-  const { stage, attach } = useProductMediaSync();
-  const { attach: attachDescriptions } = useProductDescriptionSync();
+  const { stage } = useProductMediaSync();
 
   const submit = useCallback(async () => {
     const results = await validate();
@@ -74,26 +72,6 @@ export function useProductCreateSubmit({
           },
           onFailure: "abort",
         },
-        {
-          id: "attachMedia",
-          run: async (ctx) => {
-            if (!ctx.productId) {
-              return { status: "failed", error: new Error("Missing productId") };
-            }
-            return toWorkflowStepResult(await attach(ctx.productId));
-          },
-          onFailure: "continue",
-        },
-        {
-          id: "attachDescriptions",
-          run: async (ctx) => {
-            if (!ctx.productId) {
-              return { status: "failed", error: new Error("Missing productId") };
-            }
-            return toWorkflowStepResult(await attachDescriptions(ctx.productId));
-          },
-          onFailure: "continue",
-        },
       ],
       {},
     );
@@ -116,17 +94,9 @@ export function useProductCreateSubmit({
       throw new Error("Missing productId");
     }
 
-    if (chain.steps.attachMedia?.status === "failed") {
-      onLifecycleEvent?.({ type: "createMediaFailed", productId });
-    } else if (chain.steps.attachDescriptions?.status === "failed") {
-      onLifecycleEvent?.({ type: "createDescriptionFailed", productId });
-    } else {
-      onLifecycleEvent?.({ type: "created", productId });
-    }
+    onLifecycleEvent?.({ type: "created", productId });
     void invalidateProductQueries(queryClient, productId);
   }, [
-    attach,
-    attachDescriptions,
     execute,
     getValues,
     onLifecycleEvent,

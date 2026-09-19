@@ -42,7 +42,7 @@ export function SalesChannel() {
   });
   const selectedIds = new Set(unionChannelIds(publicationLines, targetSkus));
   const selected = rows.filter((channel) => selectedIds.has(channel.salesChannelId));
-  const canManage = status == null || status === "ACTIVE";
+  const canManage = status === "ACTIVE";
 
   return (
     <Card>
