@@ -27,6 +27,7 @@ export type {
   UpdateSellableProductRequest,
   UpdateSellableProductInventoryLine,
   UpdateSellableProductPricingLine,
+  UpdateSellableProductPublicationLine,
   UpdateProductVariantPrice,
   UpdateProductVariantRequest,
   UPDATE_INTENT,
@@ -68,6 +69,9 @@ export type {
   CreateSellableProductResponse,
   UpdateSellableProductResponse,
   UpdateProductVariantResponse,
+  ProductPublication,
+  UnpublishProductFromChannelRequest,
+  ProductPublicationResponse,
 } from "./catalog.response";
 
 // Form Values

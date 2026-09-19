@@ -8,12 +8,13 @@ import {
   useIsExtensionDirty,
   useValidateAllSlots,
 } from "@khinemyaezin/seller-ui";
-import type { HateoasLink } from "@khinemyaezin/seller-api";
+import { type HateoasLink } from "@khinemyaezin/seller-api";
 import { invalidateProductQueries } from "@/features/products/api/use-products";
 import { useUpdateSellableProductCommand } from "./use-product-update-command";
 import { isCatalogFormDirty } from "@/features/products/lib/product-form-dirty";
 import { determineUpdateIntent } from "@/features/products/lib/update-product-request";
 import { buildUpdateSellableProductRequest } from "@/features/products/lib/update-sellable-product-request";
+import { diffProductPublications } from "@/features/products/lib/diff-product-publications";
 import {
   isWorkflowChainIdle,
   runWorkflowChain,
@@ -97,11 +98,21 @@ export function useProductUpdateSubmit({
         results,
         PRODUCT_SLICES,
       ) as UpdateProductContributions;
+      const publicationDiff = diffProductPublications(seed, values);
+
       payload = buildUpdateSellableProductRequest(
         productId,
         values,
         intent,
-        contributions,
+        {
+          ...contributions,
+          ...(publicationDiff.publicationLines.length > 0
+            ? { publicationLines: publicationDiff.publicationLines }
+            : {}),
+          ...(publicationDiff.unpublish.length > 0
+            ? { unpublishLines: publicationDiff.unpublish }
+            : {}),
+        },
       );
     }
 
@@ -176,6 +187,7 @@ export function useProductUpdateSubmit({
     onLifecycleEvent?.({ type: "updated" });
     resetCommand();
   }, [
+    actions,
     attach,
     attachDescriptions,
     dirtyFields,
@@ -186,6 +198,7 @@ export function useProductUpdateSubmit({
     productId,
     queryClient,
     resetCommand,
+    seed,
     stage,
     validate,
   ]);

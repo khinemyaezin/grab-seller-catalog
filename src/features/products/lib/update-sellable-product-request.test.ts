@@ -50,4 +50,34 @@ describe("buildUpdateSellableProductRequest", () => {
     expect(JSON.stringify(request)).not.toContain("media-1");
     expect(JSON.stringify(request)).not.toContain("Soft cotton mug");
   });
+
+  it("copies added publication lines onto the workflow request", () => {
+    const request = buildUpdateSellableProductRequest(
+      "prod-1",
+      formWithMedia(),
+      "COLLAPSE_TO_STANDALONE",
+      {
+        publicationLines: [{ sku: "SKU-MUG", salesChannelId: "web-1" }],
+      },
+    );
+
+    expect(request.publicationLines).toEqual([
+      { sku: "SKU-MUG", salesChannelId: "web-1" },
+    ]);
+  });
+
+  it("copies unpublish lines onto the workflow request", () => {
+    const request = buildUpdateSellableProductRequest(
+      "prod-1",
+      formWithMedia(),
+      "COLLAPSE_TO_STANDALONE",
+      {
+        unpublishLines: [{ sku: "SKU-MUG", salesChannelId: "web-1" }],
+      },
+    );
+
+    expect(request.unpublishLines).toEqual([
+      { sku: "SKU-MUG", salesChannelId: "web-1" },
+    ]);
+  });
 });

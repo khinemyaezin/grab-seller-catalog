@@ -6,32 +6,37 @@ import ProductListPage from "@/features/products/list/product-list-page";
 import ProductCreatePage from "@/features/products/create/product-create-page";
 import ProductEditPage from "@/features/products/edit/product-edit-page";
 import ProductVariantEditPage from "@/features/products/variant-edit/product-variant-edit-page";
+import { SalesChannelLinkProvider } from "@/features/products/api/sales-channel-link";
 import "../styles.css";
 
 export type AppRoutesProps = {
   link: HateoasLink;
   platform?: SellerPlatform;
   extensions?: ExtensionRegistry;
+  salesChannelLink?: HateoasLink | null;
 };
 
 export default function AppRoutes({
   link,
   platform,
-  extensions
+  extensions,
+  salesChannelLink,
 }: AppRoutesProps) {
   return (
     <div className="seller-product-mfe">
       <ExtensionProvider extensions={extensions}>
         <PlatformProvider platform={platform}>
           <EntryLinkProvider link={link}>
-            <Routes>
-              <Route index element={<ProductListPage />} />
-              <Route path="new" element={<ProductCreatePage/>}/>
-              <Route path=":productId" element={<ProductEditPage />} />
-              <Route path=":productId/variants" element={<Navigate to=".." relative="path" />} />
-              <Route path=":productId/variants/:variantId" element={<ProductVariantEditPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
+            <SalesChannelLinkProvider link={salesChannelLink}>
+              <Routes>
+                <Route index element={<ProductListPage />} />
+                <Route path="new" element={<ProductCreatePage/>}/>
+                <Route path=":productId" element={<ProductEditPage />} />
+                <Route path=":productId/variants" element={<Navigate to=".." relative="path" />} />
+                <Route path=":productId/variants/:variantId" element={<ProductVariantEditPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </SalesChannelLinkProvider>
           </EntryLinkProvider>
         </PlatformProvider>
       </ExtensionProvider>

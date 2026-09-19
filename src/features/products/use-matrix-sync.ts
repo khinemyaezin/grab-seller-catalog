@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useVariationMatrixMutation } from "@/features/products/api/use-variation-matrix";
 import { useCatalogLink } from "@/features/products/api/use-root";
+import { isStandaloneProductForm } from "@/features/products/lib/is-standalone-product-form";
+import {
+  collapsePublicationLinesToStandalone,
+  matrixPublicationSkus,
+  syncPublicationLinesForMatrixVariants,
+} from "@/features/products/lib/publication-lines";
 import type { ProductFormValue, Variant, VariationMatrixRequest, VariationMatrixResponse, VariationType } from "@/features/products/types";
 
 export function useMatrixSync() {
@@ -15,6 +21,7 @@ export function useMatrixSync() {
         defaultValue: initTypes
     });
     const lastFingerprintRef = useRef<string>('');
+    const lastPublicationKeyRef = useRef<string>("");
 
     const regenerate = useCallback(async (types: VariationType[]) => {
         const variants = getValues("product.variants");
@@ -23,6 +30,15 @@ export function useMatrixSync() {
         const hasValidOptions = request.variantTypes.some((t) => t.options.length > 0);
         if (!hasValidOptions) {
             setValue("product.variants", [], { shouldDirty: true });
+            const standaloneSku = getValues("product.standaloneVariant.sku") ?? "";
+            setValue(
+                "product.publicationLines",
+                collapsePublicationLinesToStandalone(
+                    getValues("product.publicationLines"),
+                    standaloneSku,
+                ),
+                { shouldDirty: true },
+            );
             return;
         }
 
@@ -30,6 +46,15 @@ export function useMatrixSync() {
             const res = await generateMatrix.mutateAsync(request);
             const next = responseToVariant(res, variants, types);
             setValue("product.variants", next, { shouldDirty: true });
+            setValue(
+                "product.publicationLines",
+                syncPublicationLinesForMatrixVariants(
+                    getValues("product.publicationLines"),
+                    getValues("product.standaloneVariant.sku") ?? "",
+                    matrixPublicationSkus(next),
+                ),
+                { shouldDirty: true },
+            );
         } catch {
 
         }
@@ -51,7 +76,51 @@ export function useMatrixSync() {
         }
     }, [variationTypes]);
 
+    const variants = useWatch({
+        control,
+        name: "product.variants",
+    });
+    const standaloneSku = useWatch({
+        control,
+        name: "product.standaloneVariant.sku",
+    });
+
+    useEffect(() => {
+        if (isStandaloneProductForm(variationTypes)) {
+            lastPublicationKeyRef.current = "";
+            return;
+        }
+        const matrixSkus = matrixPublicationSkus(variants);
+        const key = `${standaloneSku ?? ""}::${matrixSkus.join("|")}`;
+        if (key === lastPublicationKeyRef.current) {
+            return;
+        }
+        lastPublicationKeyRef.current = key;
+        const current = getValues("product.publicationLines") ?? [];
+        const next = syncPublicationLinesForMatrixVariants(
+            current,
+            standaloneSku ?? "",
+            matrixSkus,
+        );
+        if (publicationLinesEqual(current, next)) {
+            return;
+        }
+        setValue("product.publicationLines", next, { shouldDirty: true });
+    }, [getValues, setValue, standaloneSku, variants, variationTypes]);
+
     return { isGenerating: generateMatrix.isPending };
+}
+
+function publicationLinesEqual(
+    left: { sku: string; salesChannelId: string }[],
+    right: { sku: string; salesChannelId: string }[],
+): boolean {
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((line, index) =>
+        line.sku === right[index]?.sku && line.salesChannelId === right[index]?.salesChannelId
+    );
 }
 
 function buildMatrixRequest(

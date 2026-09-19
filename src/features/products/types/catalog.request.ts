@@ -69,7 +69,7 @@ export type ProductContributions = Partial<
 >;
 
 export type UpdateProductContributions = Partial<
-  Pick<UpdateSellableProductRequest, "pricingLines" | "inventoryLines">
+  Pick<UpdateSellableProductRequest, "pricingLines" | "inventoryLines" | "publicationLines" | "unpublishLines">
 >;
 
 export type CreateSellableProductInventoryLine = {
@@ -145,11 +145,18 @@ export type UpdateSellableProductPricingLine = {
   }[];
 };
 
+export type UpdateSellableProductPublicationLine = {
+  sku: string;
+  salesChannelId: string;
+};
+
 export type UpdateSellableProductRequest = {
   productId: string;
   product: UpdateProductRequest;
   inventoryLines?: UpdateSellableProductInventoryLine[];
   pricingLines?: UpdateSellableProductPricingLine[];
+  publicationLines?: UpdateSellableProductPublicationLine[];
+  unpublishLines?: UpdateSellableProductPublicationLine[];
   idempotencyKey?: string;
 };
 

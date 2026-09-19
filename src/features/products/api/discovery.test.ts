@@ -54,5 +54,6 @@ describe("catalog discovery", () => {
     expect(root.updateProductVariant?.href).toBe("/api/v1/workflows/update-product-variant");
     expect(root.batchVariantImages?.href).toBe("/catalog/products/{productId}/variants/{variantId}/images/batch");
     expect(root.batchVariantImages?.templated).toBe(true);
+    expect(root).not.toHaveProperty("publishProductToChannel");
   });
 });

@@ -18,14 +18,14 @@ export default function ProductEditView({
     productId,
     onLifecycleEvent,
 }: ProductEditViewProps) {
-    const { isLoading, isError, seed, status, actions } = useProductEdit({
+    const { isLoading, isError, seed, actions } = useProductEdit({
         productId,
     });
 
     return (
         <>
             <Header
-                title="Edit Product"
+                title={`Edit ${seed?.product.name ?? " Product"}`}
                 description="Update your product details."
             >
                 <ButtonGroup>
@@ -46,7 +46,6 @@ export default function ProductEditView({
                     <ProductEditForm
                         productId={productId}
                         seed={seed}
-                        status={status}
                         actions={actions}
                         onLifecycleEvent={onLifecycleEvent}
                     />

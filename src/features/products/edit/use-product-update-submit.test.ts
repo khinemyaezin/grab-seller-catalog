@@ -18,6 +18,7 @@ const mockAttach = vi.fn();
 const mockAttachDescriptions = vi.fn();
 const mockIsCatalogFormDirty = vi.fn();
 const mockExtensionDirty = false;
+const mockDiffProductPublications = vi.fn();
 
 vi.mock("react-hook-form", () => ({
   useFormContext: () => ({
@@ -51,6 +52,10 @@ vi.mock("@/features/products/api/use-products", () => ({
 vi.mock("@/features/products/lib/update-sellable-product-request", () => ({
   buildUpdateSellableProductRequest: (...args: unknown[]) =>
     mockBuildUpdateSellableProductRequest(...args),
+}));
+
+vi.mock("@/features/products/lib/diff-product-publications", () => ({
+  diffProductPublications: (...args: unknown[]) => mockDiffProductPublications(...args),
 }));
 
 vi.mock("@/features/products/lib/update-product-request", () => ({
@@ -135,6 +140,7 @@ describe("useProductUpdateSubmit", () => {
     mockCollectSlotFieldErrors.mockReturnValue({});
     mockMergeContributions.mockReturnValue({ pricingLines: [], inventoryLines: [] });
     mockBuildUpdateSellableProductRequest.mockReturnValue(payload);
+    mockDiffProductPublications.mockReturnValue({ publicationLines: [], unpublish: [] });
     mockExecute.mockResolvedValue({ productId: "prod-1" });
     mockValidate.mockResolvedValue([{ valid: true }]);
     mockStage.mockResolvedValue({ status: "synced" });
@@ -323,5 +329,64 @@ describe("useProductUpdateSubmit", () => {
     await expect(result.current.submit()).rejects.toThrow(WorkflowTimeoutError);
     expect(onLifecycleEvent).toHaveBeenCalledWith({ type: "updateTimedOut" });
     expect(mockResetCommand).toHaveBeenCalled();
+  });
+
+  it("passes added publication lines into the update payload", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(true);
+    mockDiffProductPublications.mockReturnValue({
+      publicationLines: [{ sku: "SKU-1", salesChannelId: "mkt-1" }],
+      unpublish: [],
+    });
+    mockMergeContributions.mockReturnValue({ pricingLines: [], inventoryLines: [] });
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed,
+      }),
+    );
+
+    await result.current.submit();
+
+    expect(mockBuildUpdateSellableProductRequest).toHaveBeenCalledWith(
+      "prod-1",
+      values,
+      "COLLAPSE_TO_STANDALONE",
+      {
+        pricingLines: [],
+        inventoryLines: [],
+        publicationLines: [{ sku: "SKU-1", salesChannelId: "mkt-1" }],
+      },
+    );
+  });
+
+  it("passes removed channels as unpublishLines on the update payload", async () => {
+    mockIsCatalogFormDirty.mockReturnValue(true);
+    mockDiffProductPublications.mockReturnValue({
+      publicationLines: [],
+      unpublish: [{ sku: "SKU-1", salesChannelId: "web-1" }],
+    });
+    mockMergeContributions.mockReturnValue({ pricingLines: [], inventoryLines: [] });
+
+    const { result } = renderHook(() =>
+      useProductUpdateSubmit({
+        productId: "prod-1",
+        seed,
+      }),
+    );
+
+    await result.current.submit();
+
+    expect(mockBuildUpdateSellableProductRequest).toHaveBeenCalledWith(
+      "prod-1",
+      values,
+      "COLLAPSE_TO_STANDALONE",
+      {
+        pricingLines: [],
+        inventoryLines: [],
+        unpublishLines: [{ sku: "SKU-1", salesChannelId: "web-1" }],
+      },
+    );
+    expect(mockExecute).toHaveBeenCalled();
   });
 });

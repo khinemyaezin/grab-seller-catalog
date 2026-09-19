@@ -1,10 +1,13 @@
 import type { SlotValidationErrors } from "@khinemyaezin/seller-contracts";
+import type { UpdateSellableProductPublicationLine } from "./catalog.request";
 
 export type Product = {
   name: string;
+  status?: ProductStatus;
   category: Category | null;
   variants: Variant[];
   standaloneVariant: Partial<Variant>;
+  publicationLines?: UpdateSellableProductPublicationLine[];
 };
 
 export type Category = {
@@ -79,5 +82,10 @@ export type ProductLifecycleEvent =
   | { type: "publishFailed"; name?: string }
   | { type: "deleted"; name?: string }
   | { type: "deleteFailed"; name?: string }
+  | { type: "publish"; name?: string }
+  | { type: "publishedFailed"; name?: string }
+  | { type: "suspend"; name?: string }
+  | { type: "suspendedFailed"; name?: string }
+
 
 export type ProductStatus = | "DRAFT" | "ACTIVE" | "ARCHIVED" | "SUSPENDED";

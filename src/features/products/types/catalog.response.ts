@@ -45,6 +45,10 @@ export type CreateProductResponse = {};
 
 export interface UpdateProductResponse { }
 
+export type ProductPublication = {
+  salesChannelId: string;
+};
+
 export interface ProductResponse {
   productId: string,
   productName: string,
@@ -53,6 +57,7 @@ export interface ProductResponse {
   categoryName: string,
   categoryId: string,
   thumbnail?: ProductMedia | null,
+  publications?: ProductPublication[];
   _links?: Record<string, HateoasLink>;
 }
 
@@ -168,7 +173,7 @@ export interface GetFullProductResponse {
   sellerType: string;
   condition: string;
   offerEligible: boolean;
-  status: string;
+  status: | "DRAFT" | "ACTIVE" | "ARCHIVED" | "SUSPENDED";
   slug: string;
   featured: boolean;
   descriptions: ProductDescription[] | null;
@@ -182,6 +187,7 @@ export interface GetFullProductResponse {
     manageInventory?: boolean;
     mediaIds?: string[];
     thumbnailMediaId?: string | null;
+    publications?: ProductPublication[];
     variations: {
       optionId: string;
       optionName: string;
@@ -261,6 +267,20 @@ export type CreateSellableProductResponse = {
 };
 
 export type UpdateSellableProductResponse = CreateSellableProductResponse;
+
+export type UnpublishProductFromChannelRequest = {
+  variantId: string;
+  salesChannelId: string;
+};
+
+export type ProductPublicationResponse = {
+  productId: string;
+  publications: {
+    variantId: string;
+    salesChannelId: string;
+  }[];
+  _links?: Record<string, HateoasLink>;
+};
 
 export type UpdateProductVariantResponse = {
   workflowId: string;

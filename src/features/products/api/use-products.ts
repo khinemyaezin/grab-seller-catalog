@@ -16,6 +16,7 @@ import type {
   ProductModerationResponse,
   DeleteProductResponse,
   ProductFilterFormValue,
+  ProductPublicationResponse,
 } from "@/features/products/types";
 import { resolveUrlTemplate } from "@khinemyaezin/seller-api";
 import { ProductSearchRequest } from "@/features/products/types/catalog.request";
@@ -175,4 +176,16 @@ export function useProductPublishMutation() {
     },
   });
 }
+
+export function useProductSuspendMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<ProductModerationResponse, Error, { link: HateoasLink }>({
+    mutationFn: ({ link }) => catalogService.suspendProduct(link),
+    onSuccess: (resp) => {
+      invalidateProductQueries(queryClient, resp.productId);
+    },
+  });
+}
+
 
