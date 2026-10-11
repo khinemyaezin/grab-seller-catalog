@@ -20,14 +20,14 @@ function untrackedStandalone(): ProductFormValue {
         url: "blob:hero",
         contentType: "image/jpeg",
         rank: 0,
-        storageKey: "should-not-appear",
+        storageKey: "staged/hero.jpg",
       },
     ],
     descriptions: [
       {
         name: "overview",
         title: "Overview",
-        description: "should-not-appear-either",
+        description: "Handmade mug copy",
       },
     ],
   };
@@ -46,17 +46,54 @@ describe("create sellable product inventory tracking", () => {
       },
     ]);
     expect(request.inventoryLines).toEqual([]);
-    expect(request).not.toHaveProperty("medias");
-    expect(request).not.toHaveProperty("descriptions");
+    expect(request.medias).toEqual([
+      {
+        id: "local-1",
+        storageKey: "staged/hero.jpg",
+        contentType: "image/jpeg",
+        rank: 0,
+      },
+    ]);
+    expect(request.descriptions).toEqual([
+      {
+        name: "overview",
+        title: "Overview",
+        description: "Handmade mug copy",
+      },
+    ]);
   });
 
-  it("does not copy form medias onto the workflow request", () => {
+  it("includes product status and publicationLines on the create payload", () => {
+    const values = untrackedStandalone();
+    values.product.status = "ACTIVE";
+    values.product.publicationLines = [{ sku: "SKU-DIGITAL", salesChannelId: "web-1" }];
+
+    const request = buildCreateSellableProductRequest(values);
+
+    expect(request.product.status).toBe("ACTIVE");
+    expect(request.publicationLines).toEqual([
+      { sku: "SKU-DIGITAL", salesChannelId: "web-1" },
+    ]);
+  });
+
+  it("copies staged medias and descriptions onto the workflow request", () => {
     const request = buildCreateSellableProductRequest(untrackedStandalone());
 
     expect(JSON.stringify(request)).not.toContain("blob:hero");
-    expect(JSON.stringify(request)).not.toContain("should-not-appear");
-    expect(JSON.stringify(request)).not.toContain("should-not-appear-either");
-    expect(request).not.toHaveProperty("medias");
-    expect(request).not.toHaveProperty("descriptions");
+    expect(request.medias).toEqual([
+      {
+        id: "local-1",
+        storageKey: "staged/hero.jpg",
+        contentType: "image/jpeg",
+        rank: 0,
+      },
+    ]);
+    expect(request.descriptions).toEqual([
+      {
+        name: "overview",
+        title: "Overview",
+        description: "Handmade mug copy",
+      },
+    ]);
   });
 });

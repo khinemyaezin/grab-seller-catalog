@@ -60,4 +60,16 @@ describe("ProductNewForm", () => {
     expect(rail).not.toBeNull();
     expect(screen.getByText("basic")).toBeInTheDocument();
   });
+
+  it("renders the status select as Draft in the aside", () => {
+    render(
+      <ProductNewForm
+        link={{ href: "/workflows/create-sellable-product" }}
+      />,
+    );
+
+    const status = screen.getByLabelText("Status");
+    expect(status.closest("aside")).not.toBeNull();
+    + expect(status).toHaveTextContent("Draft");
+  });
 });

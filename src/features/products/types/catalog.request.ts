@@ -1,3 +1,8 @@
+import type {
+  ReplaceProductDescriptionsRequest,
+  ReplaceProductMediaRequest,
+} from "./catalog.response";
+
 export type VariationMatrixRequestVariation = {
   typeId: string;
   optionId: string;
@@ -31,6 +36,7 @@ export type CreateProductRequestProduct = {
   categoryId: string;
   condition: string;
   slug: string;
+  status?: string;
   variants: {
     sku: string | undefined;
     variations: CreateProductRequestVariation[];
@@ -46,6 +52,9 @@ export type CreateProductRequest = {
 export type CreateSellableProductRequest = CreateProductRequest & {
   pricingLines: CreateSellableProductPricingLine[],
   inventoryLines?: CreateSellableProductInventoryLine[],
+  publicationLines?: UpdateSellableProductPublicationLine[],
+  medias?: ReplaceProductMediaRequest["medias"];
+  descriptions?: ReplaceProductDescriptionsRequest["descriptions"];
   idempotencyKey?: string;
 }
 
@@ -65,11 +74,14 @@ export type CreateSellableProductPricingLine = {
 };
 
 export type ProductContributions = Partial<
-  Pick<CreateSellableProductRequest, "pricingLines" | "inventoryLines">
+  Pick<CreateSellableProductRequest, "pricingLines" | "inventoryLines" | "publicationLines">
 >;
 
 export type UpdateProductContributions = Partial<
-  Pick<UpdateSellableProductRequest, "pricingLines" | "inventoryLines" | "publicationLines" | "unpublishLines">
+  Pick<
+    UpdateSellableProductRequest,
+    "pricingLines" | "inventoryLines" | "publicationLines" | "unpublishLines" | "medias" | "descriptions"
+  >
 >;
 
 export type CreateSellableProductInventoryLine = {
@@ -90,6 +102,7 @@ export interface UpdateProductRequest {
   categoryId: string;
   condition: string;
   slug: string;
+  status?: string;
   variantSync: {
     intent: UPDATE_INTENT;
     overrides: {
@@ -157,6 +170,8 @@ export type UpdateSellableProductRequest = {
   pricingLines?: UpdateSellableProductPricingLine[];
   publicationLines?: UpdateSellableProductPublicationLine[];
   unpublishLines?: UpdateSellableProductPublicationLine[];
+  medias?: ReplaceProductMediaRequest["medias"];
+  descriptions?: ReplaceProductDescriptionsRequest["descriptions"];
   idempotencyKey?: string;
 };
 

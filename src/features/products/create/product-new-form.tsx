@@ -12,6 +12,7 @@ import ProductMediaFieldSet from "@/features/products/ui/product-media-fieldset"
 import ProductNewVariation from "./product-new-variation";
 import { DEFAULT_PRODUCT_FORM_VALUE } from "@/features/products/lib/product-form-defaults";
 import { useMatrixSync } from "@/features/products/use-matrix-sync";
+import { ProductStatus } from "@/features/products/ui/product-status";
 import { SalesChannel } from "@/features/products/ui/sales-channel";
 
 export type ProductNewFormProps = {
@@ -90,6 +91,7 @@ function ProductNewFormContent({ link, onLifecycleEvent }: ProductNewFormProps) 
         <ProductNewVariation />
       </div>
       <aside className="flex-1 min-w-70 max-w-2xl grid gap-6">
+        <ProductStatus />
         <SalesChannel />
       </aside>
     </form>

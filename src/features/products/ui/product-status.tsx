@@ -1,10 +1,14 @@
-import { ApiError, HateoasLink } from "@khinemyaezin/seller-api";
-import { Button } from "@khinemyaezin/seller-ui/components/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@khinemyaezin/seller-ui/components/card";
-import { Badge, ButtonStatus } from "@khinemyaezin/seller-ui/components/index";
-import { useProductPublishMutation } from "@/features/products/api/use-products";
-import { ProductLifecycleEvent } from "@/features/products/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@khinemyaezin/seller-ui/components/card";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+} from "@khinemyaezin/seller-ui/components/select";
+import { useFormContext } from "react-hook-form";
+import type { ProductFormValue, ProductStatus as ProductStatusValue } from "@/features/products/types";
 
+const SELECTABLE_STATUSES: ProductStatusValue[] = ["DRAFT", "ACTIVE"];
 
 export function formatProductStatus(status: string): string {
     return status
@@ -16,9 +20,9 @@ export function formatProductStatus(status: string): string {
 export function getProductStatusDescription(status: string): string {
     switch (status) {
         case "DRAFT":
-            return "This product is hidden from all sales channels.";
+            return "Not visible on selected sales channels or markets";
         case "ACTIVE":
-            return "This product is visible to customers.";
+            return "Sell via selected sales channels and markets";
         case "ARCHIVED":
             return "This product is archived and hidden from customers.";
         case "SUSPENDED":
@@ -42,71 +46,53 @@ export function getProductStatusBadgeClass(status: string): "success" | "warning
     }
 }
 
-export interface ProductStatusSelectProps {
-    status: string | undefined;
-    link?: HateoasLink,
-    onLifecycleEvent?: (event: ProductLifecycleEvent) => void;
+function isLockedStatus(status: string): status is "ARCHIVED" | "SUSPENDED" {
+    return status === "ARCHIVED" || status === "SUSPENDED";
 }
 
-export function ProductStatus({ status, link, onLifecycleEvent }: ProductStatusSelectProps) {
-    const productStatus = (status ?? "").toUpperCase();
-    const publishProductMutation = useProductPublishMutation();
+export function ProductStatus() {
+    const { setValue, watch } = useFormContext<ProductFormValue>();
+    const status = (watch("product.status") ?? "DRAFT").toUpperCase() as ProductStatusValue;
+    const locked = isLockedStatus(status);
+    const cannotDraft = status === "ACTIVE";
+    const options: ProductStatusValue[] = locked
+        ? [status]
+        : SELECTABLE_STATUSES;
 
-    const handleOnPublish = () => {
-        if (!link) return;
-        publishProductMutation.mutate(
-            { link: link },
-            {
-                onSuccess: () => {
-                    onLifecycleEvent?.({ type: "published", name: "" })
-                },
-                onError: (error) => {
-                    const message = error instanceof ApiError ? (error?.data as { detail?: string })?.detail : undefined;
-                    onLifecycleEvent?.({ type: "publishFailed", name: message })
-                }
-            }
-        );
-    }
     return (
         <Card>
             <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                    <CardTitle>Status</CardTitle>
-                    <Badge >
-                        {formatProductStatus(productStatus)}
-                    </Badge>
-                </div>
-                <CardDescription>{getProductStatusDescription(productStatus)}</CardDescription>
+                <CardTitle>Status</CardTitle>
             </CardHeader>
-
-            {productStatus === "DRAFT" && (
-                <CardContent>
-                    <Button type="button" className="w-full" onClick={handleOnPublish} disabled={publishProductMutation.isPending || publishProductMutation.isSuccess}>
-                        <ButtonStatus status={
-                            publishProductMutation.isPending
-                                ? "pending"
-                                : publishProductMutation.isSuccess
-                                    ? "success"
-                                    : "idle"
-                        }
-                            pendingLabel="Publishing..."
-                            successLabel="Published">
-                            Publish
-                        </ButtonStatus>
-                    </Button>
-                </CardContent>
-
-            )}
-            {productStatus === "ACTIVE" && (
-                <CardContent>
-                    <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
-                        <p className="font-medium">Published</p>
-                        <p className="mt-1 text-emerald-700 dark:text-emerald-400">
-                            Customers can view this product in your sales channels.
-                        </p>
-                    </div>
-                </CardContent>
-            )}
+            <CardContent>
+                <Select
+                    value={status}
+                    disabled={locked}
+                    onValueChange={(next) =>
+                        setValue("product.status", next as ProductStatusValue, { shouldDirty: true })
+                    }
+                >
+                    <SelectTrigger className="w-full" aria-label="Status">
+                        {formatProductStatus(status)}
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="w-(--radix-select-trigger-width)">
+                        {options.map((value) => (
+                            <SelectItem
+                                key={value}
+                                value={value}
+                                disabled={value === "DRAFT" && cannotDraft}
+                            >
+                                <span className="flex flex-col gap-0.5 text-left p-1">
+                                    <span className="font-medium">{formatProductStatus(value)}</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {getProductStatusDescription(value)}
+                                    </span>
+                                </span>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </CardContent>
         </Card>
-    )
+    );
 }

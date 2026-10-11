@@ -1,6 +1,7 @@
 // Models
 export type {
   Product,
+  ProductStatus,
   Category,
   Variant,
   Variation,

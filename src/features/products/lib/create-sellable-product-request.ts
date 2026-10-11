@@ -6,6 +6,8 @@ import type {
 import { generateSlug } from "./utils";
 import { ProductContributions } from "@/features/products/types/catalog.request";
 import { tracksInventory } from "@/features/products/ui/manage-inventory-field";
+import { toReplaceMediaPayload } from "@/features/products/api/product-media";
+import { toReplaceDescriptionsPayload } from "@/features/products/api/product-descriptions";
 
 export function buildCreateProductRequest(
   values: ProductFormValue,
@@ -33,6 +35,7 @@ export function buildCreateProductRequest(
       categoryId: values.product.category?.id || "",
       condition: "NEW",
       slug: generateSlug(values.product.name),
+      status: values.product.status,
       variants: mappedVariants,
     },
     variantTypes: values.variationTypes.map((type) => ({
@@ -56,5 +59,8 @@ export function buildCreateSellableProductRequest(
     pricingLines: [],
     inventoryLines: [],
     ...contributions,
+    publicationLines: values.product.publicationLines ?? [],
+    medias: toReplaceMediaPayload(values.medias ?? []),
+    descriptions: toReplaceDescriptionsPayload(values.descriptions),
   };
 }

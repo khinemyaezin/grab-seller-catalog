@@ -55,6 +55,7 @@ export function buildUpdateProductRequest(
     categoryId: values.product.category?.id || "",
     condition: "NEW",
     slug: generateSlug(values.product.name),
+    status: values.product.status,
 
     variantSync: {
       intent: intent,

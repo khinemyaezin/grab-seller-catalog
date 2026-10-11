@@ -11,6 +11,7 @@ import { HateoasLink } from "@khinemyaezin/seller-api";
 import { useContextBar, useResetAllSlots, useIsExtensionDirty } from "@khinemyaezin/seller-ui";
 import useProductNameWatch from "@/features/products/use-product-name-watch";
 import { InventoryEditStandalone } from "@/features/products/ui/slots/inventory/inventory-edit-standalone";
+import { ProductStatus } from "@/features/products/ui/product-status";
 import { SalesChannel } from "@/features/products/ui/sales-channel";
 import { useMatrixSync } from "@/features/products/use-matrix-sync";
 
@@ -116,6 +117,7 @@ function ProductEditFormFields({
                 <ProductEditVariation />
             </div>
             <aside className="flex-1 min-w-70 max-w-2xl grid gap-6">
+                <ProductStatus />
                 <SalesChannel />
             </aside>
         </form>
